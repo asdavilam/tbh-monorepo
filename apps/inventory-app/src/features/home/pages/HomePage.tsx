@@ -1,3 +1,8 @@
+/**
+ * Render the home page section for the inventory system.
+ *
+ * @returns The JSX element representing the inventory system's home page content.
+ */
 export function HomePage() {
   return (
     <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>

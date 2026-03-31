@@ -1,3 +1,8 @@
+/**
+ * Renders a centered, responsive landing-style page with a prominent heading and a subtitle.
+ *
+ * @returns The page as a JSX element.
+ */
 export function App() {
   return (
     <main

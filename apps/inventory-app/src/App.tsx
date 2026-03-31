@@ -1,10 +1,94 @@
-import { Routes, Route } from 'react-router-dom';
-import { HomePage } from './features/home/pages/HomePage';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './shared/contexts/AuthContext';
+import { LoginPage } from './features/auth/pages/LoginPage';
+import { RegisterPage } from './features/auth/pages/RegisterPage';
+import { InventoryPage } from './features/inventory/pages/InventoryPage';
+import { ShoppingListPage } from './features/shopping-list/pages/ShoppingListPage';
+import { PurchasePage } from './features/purchases/pages/PurchasePage';
+import { colors } from './shared/theme';
+import type { ReactNode } from 'react';
+
+function AuthGuard({ children }: { children: ReactNode }) {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: colors.bg,
+          color: colors.textMuted,
+        }}
+      >
+        Cargando...
+      </div>
+    );
+  }
+
+  if (!user) return <Navigate to="/login" replace />;
+
+  return <>{children}</>;
+}
+
+function RoleGuard({ children, allowedRoles }: { children: ReactNode; allowedRoles: string[] }) {
+  const { user } = useAuth();
+  if (!user || !allowedRoles.includes(user.role)) {
+    return <Navigate to="/inventario" replace />;
+  }
+  return <>{children}</>;
+}
+
+function AppRoutes() {
+  return (
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/registro" element={<RegisterPage />} />
+
+      <Route
+        path="/inventario"
+        element={
+          <AuthGuard>
+            <InventoryPage />
+          </AuthGuard>
+        }
+      />
+
+      <Route
+        path="/lista"
+        element={
+          <AuthGuard>
+            <ShoppingListPage />
+          </AuthGuard>
+        }
+      />
+
+      <Route
+        path="/compras"
+        element={
+          <AuthGuard>
+            <RoleGuard allowedRoles={['admin', 'encargado']}>
+              <PurchasePage />
+            </RoleGuard>
+          </AuthGuard>
+        }
+      />
+
+      {/* Redirigir raíz a inventario */}
+      <Route path="/" element={<Navigate to="/inventario" replace />} />
+
+      {/* Catch-all */}
+      <Route path="*" element={<Navigate to="/inventario" replace />} />
+    </Routes>
+  );
+}
 
 export function App() {
   return (
-    <Routes>
-      <Route path="/" element={<HomePage />} />
-    </Routes>
+    <AuthProvider>
+      <AppRoutes />
+    </AuthProvider>
   );
 }

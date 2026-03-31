@@ -23,6 +23,18 @@ importers:
 
   apps/inventory-app:
     dependencies:
+      '@supabase/supabase-js':
+        specifier: ^2.39.0
+        version: 2.101.0
+      '@tbh/application':
+        specifier: workspace:*
+        version: link:../../packages/application
+      '@tbh/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
+      '@tbh/infrastructure':
+        specifier: workspace:*
+        version: link:../../packages/infrastructure
       '@tbh/types':
         specifier: workspace:*
         version: link:../../packages/types

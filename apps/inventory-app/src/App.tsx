@@ -5,6 +5,8 @@ import { RegisterPage } from './features/auth/pages/RegisterPage';
 import { InventoryPage } from './features/inventory/pages/InventoryPage';
 import { ShoppingListPage } from './features/shopping-list/pages/ShoppingListPage';
 import { PurchasePage } from './features/purchases/pages/PurchasePage';
+import { ProductsPage } from './features/products/pages/ProductsPage';
+import { ProductFormPage } from './features/products/pages/ProductFormPage';
 import { colors } from './shared/theme';
 import type { ReactNode } from 'react';
 
@@ -60,7 +62,9 @@ function AppRoutes() {
         path="/lista"
         element={
           <AuthGuard>
-            <ShoppingListPage />
+            <RoleGuard allowedRoles={['admin', 'encargado']}>
+              <ShoppingListPage />
+            </RoleGuard>
           </AuthGuard>
         }
       />
@@ -71,6 +75,39 @@ function AppRoutes() {
           <AuthGuard>
             <RoleGuard allowedRoles={['admin', 'encargado']}>
               <PurchasePage />
+            </RoleGuard>
+          </AuthGuard>
+        }
+      />
+
+      <Route
+        path="/productos"
+        element={
+          <AuthGuard>
+            <RoleGuard allowedRoles={['admin']}>
+              <ProductsPage />
+            </RoleGuard>
+          </AuthGuard>
+        }
+      />
+
+      <Route
+        path="/productos/nuevo"
+        element={
+          <AuthGuard>
+            <RoleGuard allowedRoles={['admin']}>
+              <ProductFormPage />
+            </RoleGuard>
+          </AuthGuard>
+        }
+      />
+
+      <Route
+        path="/productos/:id/editar"
+        element={
+          <AuthGuard>
+            <RoleGuard allowedRoles={['admin']}>
+              <ProductFormPage />
             </RoleGuard>
           </AuthGuard>
         }

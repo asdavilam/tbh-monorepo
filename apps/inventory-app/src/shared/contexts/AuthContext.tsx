@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { UserRole } from '@tbh/domain';
-import { supabase } from '../supabase';
+import { authClient, getCurrentUser } from '../di';
 
 export interface AuthUser {
   id: string;
@@ -13,6 +13,7 @@ interface AuthContextValue {
   user: AuthUser | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, name: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -22,46 +23,60 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  async function loadProfile(userId: string, email: string) {
-    const { data } = await supabase.from('profiles').select('name, role').eq('id', userId).single();
-
-    if (data) {
-      setUser({ id: userId, email, name: data.name, role: data.role as UserRole });
+  async function loadUser(userId: string, email: string) {
+    const domainUser = await getCurrentUser.execute(userId, email);
+    if (domainUser) {
+      setUser({
+        id: domainUser.id,
+        email: domainUser.email,
+        name: domainUser.name,
+        role: domainUser.role,
+      });
+    } else {
+      setUser(null);
     }
   }
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        loadProfile(session.user.id, session.user.email ?? '').finally(() => setLoading(false));
+    // Recuperar sesión existente al montar
+    authClient.getSession().then((session) => {
+      if (session) {
+        loadUser(session.userId, session.email).finally(() => setLoading(false));
       } else {
         setLoading(false);
       }
     });
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        loadProfile(session.user.id, session.user.email ?? '');
+    // Escuchar cambios de sesión (login / logout / token refresh)
+    const unsubscribe = authClient.onAuthStateChange((session) => {
+      if (session) {
+        loadUser(session.userId, session.email);
       } else {
         setUser(null);
       }
     });
 
-    return () => listener.subscription.unsubscribe();
+    return unsubscribe;
   }, []);
 
   async function signIn(email: string, password: string) {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw new Error(error.message);
+    const session = await authClient.signIn(email, password);
+    await loadUser(session.userId, session.email);
+  }
+
+  async function signUp(email: string, password: string, name: string) {
+    await authClient.signUp(email, password, name);
+    // El trigger de Supabase crea el perfil automáticamente.
+    // onAuthStateChange disparará loadUser cuando la sesión esté lista.
   }
 
   async function signOut() {
-    await supabase.auth.signOut();
+    await authClient.signOut();
     setUser(null);
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );

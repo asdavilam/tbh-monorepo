@@ -1,10 +1,11 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { supabase } from '../../../shared/supabase';
+import { useAuth } from '../../../shared/contexts/AuthContext';
 import { colors, fontSize, radius, spacing } from '../../../shared/theme';
 
 export function RegisterPage() {
   const navigate = useNavigate();
+  const { signUp } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -20,12 +21,7 @@ export function RegisterPage() {
     setError('');
     setLoading(true);
     try {
-      const { error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { data: { name } },
-      });
-      if (signUpError) throw signUpError;
+      await signUp(email, password, name);
       navigate('/inventario');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);

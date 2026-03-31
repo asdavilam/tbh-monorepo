@@ -1,0 +1,10 @@
+{
+  "name": "@tbh/config",
+  "version": "0.0.1",
+  "private": true,
+  "files": [
+    "eslint.config.js",
+    "tsconfig.base.json",
+    "tsconfig.react.json"
+  ]
+}

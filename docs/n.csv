@@ -1,0 +1,41 @@
+Fase,Tarea,Objetivo,Prioridad,Estado
+FASE 0 - SETUP,Inicializar monorepo (Turborepo),Infraestructura base,Alta,Sin empezar
+FASE 0 - SETUP,Configurar Workspaces (apps/packages/supabase),Infraestructura base,Alta,Sin empezar
+FASE 0 - SETUP,Crear apps (inventory-app y web-public),Infraestructura base,Media,Sin empezar
+FASE 0 - SETUP,Crear packages (domain/application/infra/ui),Arquitectura limpia,Alta,Sin empezar
+FASE 0 - SETUP,Configurar proyecto Supabase (Auth/DB),Backend,Alta,Sin empezar
+FASE 0 - SETUP,Configurar Deploy inicial en Vercel,CI/CD,Baja,Sin empezar
+FASE 1 - DB,Diseñar tablas (products/inventory/purchases/users),Persistencia,Alta,Sin empezar
+FASE 1 - DB,Crear migraciones y constraints,Integridad de datos,Alta,Sin empezar
+FASE 1 - DB,Configurar RLS (Row Level Security),Seguridad,Alta,Sin empezar
+FASE 1 - DB,Crear Seeds (datos de prueba),Testing,Baja,Sin empezar
+FASE 2 - DOMAIN,Definir Entidades (Product/Inventory/Purchase),Lógica de negocio,Alta,Sin empezar
+FASE 2 - DOMAIN,Implementar reglas de cálculo de stock y validación,Lógica de negocio,Alta,Sin empezar
+FASE 2 - DOMAIN,Definir interfaces de Repositorios,Abstracción,Media,Sin empezar
+FASE 2 - APPLICATION,Implementar UseCase: RegisterInventory,Funcionalidad Core,Alta,Sin empezar
+FASE 2 - APPLICATION,Implementar UseCase: GetProductsByUser,Funcionalidad Core,Alta,Sin empezar
+FASE 2 - APPLICATION,Implementar UseCase: RegisterPurchase,Funcionalidad Compras,Media,Sin empezar
+FASE 2 - APPLICATION,Implementar UseCase: GenerateShoppingList,Funcionalidad Lista,Media,Sin empezar
+FASE 3 - INFRA,Configurar cliente Supabase en infraestructura,Conectividad,Alta,Sin empezar
+FASE 3 - INFRA,Implementar Repositorios Reales (PostgreSQL),Persistencia,Alta,Sin empezar
+FASE 3 - INFRA,Crear Mappers (Entity <-> DB),Arquitectura limpia,Media,Sin empezar
+FASE 4 - AUTH,Implementar Login y Persistencia de sesión,Seguridad,Alta,Sin empezar
+FASE 4 - AUTH,Implementar lógica de Roles (Admin/Encargado/Trabajador),Seguridad,Alta,Sin empezar
+FASE 4 - AUTH,Restringir rutas y acceso a datos por rol,Seguridad,Alta,Sin empezar
+FASE 5 - PRODUCTOS,Crear UI CRUD de productos,Gestión,Media,Sin empezar
+FASE 5 - PRODUCTOS,Validaciones de formulario e integración con UseCases,UX,Media,Sin empezar
+FASE 6 - INVENTARIO,UI Lista de productos asignados (Checklist),Digitalización,Alta,Sin empezar
+FASE 6 - INVENTARIO,Lógica de carga automática de stock inicial,Automatización,Alta,Sin empezar
+FASE 6 - INVENTARIO,Validación de frecuencia de productos (día actual),Reglas de negocio,Alta,Sin empezar
+FASE 6 - INVENTARIO,Visualización de diferencias de stock,Control,Alta,Sin empezar
+FASE 7 - COMPRAS,Formulario de registro de compras,Actualización stock,Media,Sin empezar
+FASE 7 - COMPRAS,Validar impacto de compra en inventario,Integridad,Media,Sin empezar
+FASE 8 - SHOPPING LIST,Generar lista automática de faltantes,Automatización,Media,Sin empezar
+FASE 8 - SHOPPING LIST,UI Indicadores de bajo stock,Visualización,Media,Sin empezar
+FASE 9 - HISTORIAL,Vista de historial por producto,Trazabilidad,Baja,Sin empezar
+FASE 9 - HISTORIAL,Tabla de registros y diferencias históricas,Control,Baja,Sin empezar
+FASE 10 - UI/UX,Optimización de inputs para rapidez móvil,Adopción,Alta,Sin empezar
+FASE 10 - UI/UX,Ajustar flujo para imitar hoja física,UX,Alta,Sin empezar
+FASE 11 - WEB,Crear Landing simple "En construcción",Presencia,Baja,Sin empezar
+FASE 12 - DEPLOY,Configurar dominios y variables de entorno finales,Producción,Alta,Sin empezar
+FASE 13 - TESTING,Prueba operativa real (Papel vs App),Validación,Alta,Sin empezar

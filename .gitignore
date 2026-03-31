@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+.pnpm-debug.log*
+
+# Build and Turbo
+dist/
+build/
+.turbo/
+
+# Environment and Secrets
+.env
+.env.local
+.env.*.local
+*.local
+supabase/.temp/
+supabase/.env
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo

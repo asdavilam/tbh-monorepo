@@ -1,7 +1,6 @@
 import { useState, useEffect, type FormEvent } from 'react';
 import type { ProductResponseDto } from '@tbh/application';
-import { registerPurchase } from '../../../shared/di';
-import { supabase } from '../../../shared/supabase';
+import { registerPurchase, getAllProducts } from '../../../shared/di';
 import { useAuth } from '../../../shared/contexts/AuthContext';
 import { Layout } from '../../../shared/components/Layout';
 import { colors, fontSize, radius, spacing } from '../../../shared/theme';
@@ -17,30 +16,12 @@ export function PurchasePage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    supabase
-      .from('products')
-      .select('*')
-      .order('name')
-      .then(({ data }) => {
-        if (data) {
-          setProducts(
-            data.map((p) => ({
-              id: p.id,
-              name: p.name,
-              type: p.type,
-              unitType: p.unit_type,
-              unitLabel: p.unit_label,
-              countFrequency: p.count_frequency,
-              countDays: p.count_days ?? [],
-              minStock: p.min_stock,
-              assignedUserId: p.assigned_user_id,
-              createdAt: p.created_at,
-              updatedAt: p.updated_at,
-            }))
-          );
-        }
-      });
-  }, []);
+    if (!user) return;
+    getAllProducts
+      .execute(user.id)
+      .then(setProducts)
+      .catch(() => setProducts([]));
+  }, [user?.id]);
 
   const selectedProduct = products.find((p) => p.id === productId);
 

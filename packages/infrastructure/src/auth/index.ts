@@ -22,6 +22,19 @@ export class SupabaseAuthClient {
     return { userId: data.user.id, email: data.user.email ?? email };
   }
 
+  async signUp(email: string, password: string, name: string): Promise<AuthSession> {
+    const { data, error } = await this.client.auth.signUp({
+      email,
+      password,
+      options: { data: { name } },
+    });
+
+    if (error) throw new RepositoryError(`Error al registrarse: ${error.message}`);
+    if (!data.user) throw new RepositoryError('No se pudo crear el usuario');
+
+    return { userId: data.user.id, email: data.user.email ?? email };
+  }
+
   async signOut(): Promise<void> {
     const { error } = await this.client.auth.signOut();
     if (error) throw new RepositoryError(`Error al cerrar sesión: ${error.message}`);

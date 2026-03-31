@@ -2,17 +2,19 @@ import { NavLink } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { colors } from '../theme';
 
-const navItems = [
-  { to: '/inventario', label: 'Inventario', icon: '📋' },
-  { to: '/compras', label: 'Compras', icon: '🛒' },
-  { to: '/lista', label: 'Lista', icon: '📝' },
-];
-
-const adminItems = [{ to: '/productos', label: 'Productos', icon: '📦' }];
-
 export function BottomNav() {
   const { user, signOut } = useAuth();
-  const items = user?.role === 'admin' ? [...navItems, ...adminItems] : navItems;
+
+  const items = [
+    { to: '/inventario', label: 'Inventario', icon: '📋' },
+    ...(user?.role === 'encargado' || user?.role === 'admin'
+      ? [{ to: '/compras', label: 'Compras', icon: '🛒' }]
+      : []),
+    ...(user?.role === 'encargado' || user?.role === 'admin'
+      ? [{ to: '/lista', label: 'Lista', icon: '📝' }]
+      : []),
+    ...(user?.role === 'admin' ? [{ to: '/productos', label: 'Productos', icon: '📦' }] : []),
+  ];
 
   return (
     <nav

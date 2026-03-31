@@ -1,2 +1,1 @@
-// Orchestration services will be defined when needed
-export {};
+export type { IAuthService, AuthSession } from './auth.service';

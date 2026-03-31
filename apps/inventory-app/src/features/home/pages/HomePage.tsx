@@ -1,5 +1,3 @@
-import React from 'react';
-
 export function HomePage() {
   return (
     <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>

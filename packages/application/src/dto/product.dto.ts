@@ -1,4 +1,4 @@
-import type { ProductType, UnitType, CountFrequency, DayOfWeek } from '@tbh/domain';
+import type { ProductType, UnitType, CountFrequency, DayOfWeek, UserRole } from '@tbh/domain';
 
 export interface CreateProductDto {
   name: string;
@@ -35,4 +35,20 @@ export interface ProductResponseDto {
   assignedUserId: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface GetProductsByUserDto {
+  userId: string;
+  userRole: UserRole;
+  /** Fecha para filtrar por frecuencia de conteo */
+  date: Date;
+}
+
+export interface ShoppingListItemDto {
+  productId: string;
+  productName: string;
+  unitLabel: string;
+  currentStock: number;
+  minStock: number;
+  suggestedQuantity: number;
 }

@@ -13,6 +13,19 @@ create table profiles (
 -- RLS
 alter table profiles enable row level security;
 
+-- Función helper para verificar admin sin recursión en RLS
+-- SECURITY DEFINER: la query interna no pasa por RLS, evitando infinite recursion
+create or replace function is_admin()
+returns boolean
+language sql
+security definer set search_path = public
+as $$
+  select exists (
+    select 1 from profiles
+    where id = auth.uid() and role = 'admin'
+  );
+$$;
+
 -- Los usuarios pueden leer su propio perfil
 create policy "users_read_own_profile"
   on profiles for select
@@ -21,19 +34,9 @@ create policy "users_read_own_profile"
 -- Solo admins pueden leer todos los perfiles
 create policy "admins_read_all_profiles"
   on profiles for select
-  using (
-    exists (
-      select 1 from profiles
-      where id = auth.uid() and role = 'admin'
-    )
-  );
+  using (is_admin());
 
 -- Solo admins pueden actualizar perfiles
 create policy "admins_update_profiles"
   on profiles for update
-  using (
-    exists (
-      select 1 from profiles
-      where id = auth.uid() and role = 'admin'
-    )
-  );
+  using (is_admin());

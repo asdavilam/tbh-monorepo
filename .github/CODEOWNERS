@@ -1,0 +1,14 @@
+# Código central y de dominio
+/packages/domain/ @asdavilam
+/packages/application/ @asdavilam
+
+# Bases de datos y configuraciones globales
+/supabase/ @asdavilam
+/.github/workflows/ @asdavilam
+package.json @asdavilam
+pnpm-workspace.yaml @asdavilam
+turborepo.json @asdavilam
+
+# Si hubieran más miembros del equipo, podrías agregar:
+# /apps/inventory-app/ @frontend-team
+# /apps/web-public/ @web-team

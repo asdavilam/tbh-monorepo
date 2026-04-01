@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import type { ProductResponseDto, InventoryRecordResponseDto } from '@tbh/application';
+import type { InventoryItemDto, InventoryRecordResponseDto } from '@tbh/application';
 import type { QualitativeValue } from '@tbh/domain';
 import { registerInventory } from '../../../shared/di';
 import { colors, radius, fontSize, spacing } from '../../../shared/theme';
 
 interface CountCardProps {
-  product: ProductResponseDto;
+  item: InventoryItemDto;
   userId: string;
   onSaved: (record: InventoryRecordResponseDto) => void;
 }
@@ -16,15 +16,54 @@ const QUALITATIVE_OPTIONS: { value: QualitativeValue; label: string; color: stri
   { value: 'nada', label: 'Nada', color: colors.danger },
 ];
 
-export function CountCard({ product, userId, onSaved }: CountCardProps) {
+const TYPE_LABELS: Record<string, string> = {
+  raw_material: 'Materia prima',
+  disposable: 'Desechable',
+  basic: 'Básico',
+};
+
+function DifferenceDisplay({ difference }: { difference: number }) {
+  const isNegative = difference < 0;
+  const isZero = difference === 0;
+  const color = isNegative ? colors.danger : isZero ? colors.textMuted : colors.success;
+  const sign = difference > 0 ? '+' : '';
+  const label = isNegative ? 'faltante' : isZero ? 'sin cambio' : 'consumo';
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: isNegative ? colors.dangerLight : isZero ? colors.bg : colors.successLight,
+        borderRadius: radius.sm,
+        padding: `${spacing.xs} ${spacing.sm}`,
+      }}
+    >
+      <span style={{ fontSize: fontSize.sm, color: colors.textMuted }}>Diferencia</span>
+      <span style={{ fontSize: fontSize.base, fontWeight: 700, color }}>
+        {sign}
+        {difference} — {label}
+      </span>
+    </div>
+  );
+}
+
+export function CountCard({ item, userId, onSaved }: CountCardProps) {
   const [finalCount, setFinalCount] = useState('');
   const [qualitativeValue, setQualitativeValue] = useState<QualitativeValue | null>(null);
-  const [saved, setSaved] = useState(false);
+  const [savedRecord, setSavedRecord] = useState<InventoryRecordResponseDto | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  const isQualitative = product.unitType === 'qualitative';
+  const isQualitative = item.unitType === 'qualitative';
   const canSave = isQualitative ? qualitativeValue !== null : finalCount !== '';
+
+  // Diferencia en tiempo real (solo para productos numéricos con stock inicial conocido)
+  const liveDifference: number | null =
+    !isQualitative && item.initialStock !== null && finalCount !== ''
+      ? Number(finalCount) - item.initialStock
+      : null;
 
   async function handleSave() {
     if (!canSave) return;
@@ -32,14 +71,14 @@ export function CountCard({ product, userId, onSaved }: CountCardProps) {
     setError('');
     try {
       const record = await registerInventory.execute({
-        productId: product.id,
+        productId: item.productId,
         userId,
         date: new Date(),
         finalCount: isQualitative ? null : Number(finalCount),
         qualitativeValue: isQualitative ? qualitativeValue : null,
       });
       onSaved(record);
-      setSaved(true);
+      setSavedRecord(record);
     } catch (err) {
       setError(String(err));
     } finally {
@@ -47,7 +86,8 @@ export function CountCard({ product, userId, onSaved }: CountCardProps) {
     }
   }
 
-  if (saved) {
+  // Estado: guardado
+  if (savedRecord) {
     return (
       <div
         style={{
@@ -55,19 +95,52 @@ export function CountCard({ product, userId, onSaved }: CountCardProps) {
           border: `1px solid ${colors.success}`,
           borderRadius: radius.md,
           padding: spacing.md,
-          display: 'flex',
-          alignItems: 'center',
-          gap: spacing.sm,
         }}
       >
-        <span style={{ fontSize: '20px' }}>✅</span>
-        <div>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: spacing.sm,
+            marginBottom: spacing.xs,
+          }}
+        >
+          <span style={{ fontSize: '18px' }}>✅</span>
           <p style={{ margin: 0, fontWeight: 600, fontSize: fontSize.base, color: colors.text }}>
-            {product.name}
+            {item.name}
           </p>
-          <p style={{ margin: 0, fontSize: fontSize.sm, color: colors.textMuted }}>
-            {isQualitative ? qualitativeValue : `${finalCount} ${product.unitLabel}`} — guardado
-          </p>
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            gap: spacing.sm,
+            fontSize: fontSize.sm,
+            color: colors.textMuted,
+            flexWrap: 'wrap',
+          }}
+        >
+          {!isQualitative && savedRecord.initialStock !== null && (
+            <span>
+              Inicial: {savedRecord.initialStock} {item.unitLabel}
+            </span>
+          )}
+          <span>
+            Final:{' '}
+            {isQualitative
+              ? savedRecord.qualitativeValue
+              : `${savedRecord.finalCount} ${item.unitLabel}`}
+          </span>
+          {savedRecord.difference !== null && (
+            <span
+              style={{
+                fontWeight: 600,
+                color: savedRecord.difference < 0 ? colors.danger : colors.success,
+              }}
+            >
+              Diferencia: {savedRecord.difference > 0 ? '+' : ''}
+              {savedRecord.difference}
+            </span>
+          )}
         </div>
       </div>
     );
@@ -85,16 +158,16 @@ export function CountCard({ product, userId, onSaved }: CountCardProps) {
         gap: spacing.sm,
       }}
     >
-      {/* Header */}
+      {/* Encabezado */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <p style={{ margin: 0, fontWeight: 600, fontSize: fontSize.lg, color: colors.text }}>
-            {product.name}
+            {item.name}
           </p>
           <p
             style={{ margin: 0, fontSize: fontSize.sm, color: colors.textMuted, marginTop: '2px' }}
           >
-            {product.unitType === 'qualitative' ? 'Cualitativo' : product.unitLabel}
+            {isQualitative ? 'Cualitativo' : item.unitLabel}
           </p>
         </div>
         <span
@@ -105,17 +178,35 @@ export function CountCard({ product, userId, onSaved }: CountCardProps) {
             padding: '3px 8px',
             borderRadius: '20px',
             fontWeight: 500,
+            whiteSpace: 'nowrap',
           }}
         >
-          {product.type === 'raw_material'
-            ? 'Materia prima'
-            : product.type === 'disposable'
-              ? 'Desechable'
-              : 'Básico'}
+          {TYPE_LABELS[item.type] ?? item.type}
         </span>
       </div>
 
-      {/* Input */}
+      {/* Stock inicial (solo productos numéricos) */}
+      {!isQualitative && (
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            backgroundColor: colors.bg,
+            borderRadius: radius.sm,
+            padding: `${spacing.xs} ${spacing.sm}`,
+          }}
+        >
+          <span style={{ fontSize: fontSize.sm, color: colors.textMuted }}>Stock inicial</span>
+          <span style={{ fontSize: fontSize.base, fontWeight: 600, color: colors.text }}>
+            {item.initialStock !== null
+              ? `${item.initialStock} ${item.unitLabel}`
+              : '— sin historial'}
+          </span>
+        </div>
+      )}
+
+      {/* Input de conteo final */}
       {isQualitative ? (
         <div style={{ display: 'flex', gap: spacing.sm }}>
           {QUALITATIVE_OPTIONS.map((opt) => (
@@ -140,30 +231,47 @@ export function CountCard({ product, userId, onSaved }: CountCardProps) {
           ))}
         </div>
       ) : (
-        <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm }}>
-          <input
-            type="number"
-            min="0"
-            step="any"
-            value={finalCount}
-            onChange={(e) => setFinalCount(e.target.value)}
-            placeholder="0"
+        <div>
+          <label
             style={{
-              flex: 1,
-              padding: '12px',
-              border: `1px solid ${colors.border}`,
-              borderRadius: radius.sm,
-              fontSize: '16px',
-              outline: 'none',
-              minHeight: '44px',
-              boxSizing: 'border-box',
+              display: 'block',
+              fontSize: fontSize.sm,
+              color: colors.textMuted,
+              marginBottom: '4px',
             }}
-          />
-          <span style={{ fontSize: fontSize.base, color: colors.textMuted, whiteSpace: 'nowrap' }}>
-            {product.unitLabel}
-          </span>
+          >
+            Stock final
+          </label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm }}>
+            <input
+              type="number"
+              min="0"
+              step="any"
+              value={finalCount}
+              onChange={(e) => setFinalCount(e.target.value)}
+              placeholder="0"
+              style={{
+                flex: 1,
+                padding: '12px',
+                border: `1px solid ${colors.border}`,
+                borderRadius: radius.sm,
+                fontSize: '16px',
+                outline: 'none',
+                minHeight: '44px',
+                boxSizing: 'border-box',
+              }}
+            />
+            <span
+              style={{ fontSize: fontSize.base, color: colors.textMuted, whiteSpace: 'nowrap' }}
+            >
+              {item.unitLabel}
+            </span>
+          </div>
         </div>
       )}
+
+      {/* Diferencia en tiempo real */}
+      {liveDifference !== null && <DifferenceDisplay difference={liveDifference} />}
 
       {error && <p style={{ margin: 0, fontSize: fontSize.sm, color: colors.danger }}>{error}</p>}
 

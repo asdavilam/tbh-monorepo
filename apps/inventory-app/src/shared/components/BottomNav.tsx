@@ -13,6 +13,9 @@ export function BottomNav() {
     ...(user?.role === 'encargado' || user?.role === 'admin'
       ? [{ to: '/lista', label: 'Lista', icon: '📝' }]
       : []),
+    ...(user?.role === 'encargado' || user?.role === 'admin'
+      ? [{ to: '/historial', label: 'Historial', icon: '📊' }]
+      : []),
     ...(user?.role === 'admin' ? [{ to: '/productos', label: 'Productos', icon: '📦' }] : []),
   ];
 

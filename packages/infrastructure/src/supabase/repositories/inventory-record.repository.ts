@@ -32,6 +32,18 @@ export class SupabaseInventoryRecordRepository implements IInventoryRecordReposi
     return toInventoryRecordEntity(data);
   }
 
+  async findAllByProduct(productId: string): Promise<InventoryRecord[]> {
+    const { data, error } = await this.client
+      .from('inventory_records')
+      .select('*')
+      .eq('product_id', productId)
+      .order('date', { ascending: true });
+
+    if (error)
+      throw new RepositoryError(`Error al buscar historial del producto: ${error.message}`);
+    return (data ?? []).map(toInventoryRecordEntity);
+  }
+
   async findByProductAndDateRange(
     productId: string,
     from: Date,

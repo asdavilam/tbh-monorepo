@@ -7,6 +7,7 @@ import { ShoppingListPage } from './features/shopping-list/pages/ShoppingListPag
 import { PurchasePage } from './features/purchases/pages/PurchasePage';
 import { ProductsPage } from './features/products/pages/ProductsPage';
 import { ProductFormPage } from './features/products/pages/ProductFormPage';
+import { HistoryPage } from './features/history/pages/HistoryPage';
 import { colors } from './shared/theme';
 import type { ReactNode } from 'react';
 
@@ -108,6 +109,17 @@ function AppRoutes() {
           <AuthGuard>
             <RoleGuard allowedRoles={['admin']}>
               <ProductFormPage />
+            </RoleGuard>
+          </AuthGuard>
+        }
+      />
+
+      <Route
+        path="/historial"
+        element={
+          <AuthGuard>
+            <RoleGuard allowedRoles={['admin', 'encargado']}>
+              <HistoryPage />
             </RoleGuard>
           </AuthGuard>
         }

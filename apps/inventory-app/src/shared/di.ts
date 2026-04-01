@@ -13,15 +13,18 @@ import type { IAuthService } from '@tbh/application';
 
 import {
   RegisterInventoryUseCase,
+  GetInventoryForTodayUseCase,
   GetProductsByUserUseCase,
   GetAllProductsUseCase,
   RegisterPurchaseUseCase,
+  GetRecentPurchasesUseCase,
   GenerateShoppingListUseCase,
   GetCurrentUserUseCase,
   CreateProductUseCase,
   UpdateProductUseCase,
   DeleteProductUseCase,
   GetAllUsersUseCase,
+  GetInventoryHistoryByProductUseCase,
 } from '@tbh/application';
 
 import { supabase } from './supabase';
@@ -44,11 +47,20 @@ export const registerInventory = new RegisterInventoryUseCase(
   productRepo
 );
 
+export const getInventoryForToday = new GetInventoryForTodayUseCase(
+  productRepo,
+  inventoryRepo,
+  purchaseRepo,
+  userRepo
+);
+
 export const getProductsByUser = new GetProductsByUserUseCase(productRepo, userRepo);
 
 export const getAllProducts = new GetAllProductsUseCase(productRepo, userRepo);
 
 export const registerPurchase = new RegisterPurchaseUseCase(purchaseRepo, userRepo);
+
+export const getRecentPurchases = new GetRecentPurchasesUseCase(purchaseRepo, productRepo);
 
 export const generateShoppingList = new GenerateShoppingListUseCase(
   productRepo,
@@ -60,3 +72,10 @@ export const createProduct = new CreateProductUseCase(productRepo, userRepo);
 export const updateProduct = new UpdateProductUseCase(productRepo, userRepo);
 export const deleteProduct = new DeleteProductUseCase(productRepo, userRepo);
 export const getAllUsers = new GetAllUsersUseCase(userRepo);
+
+export const getInventoryHistoryByProduct = new GetInventoryHistoryByProductUseCase(
+  inventoryRepo,
+  purchaseRepo,
+  productRepo,
+  userRepo
+);

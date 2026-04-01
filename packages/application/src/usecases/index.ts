@@ -1,4 +1,5 @@
 export { RegisterInventoryUseCase } from './register-inventory.usecase';
+export { GetInventoryForTodayUseCase } from './get-inventory-for-today.usecase';
 export { GetProductsByUserUseCase } from './get-products-by-user.usecase';
 export { GetAllProductsUseCase } from './get-all-products.usecase';
 export { RegisterPurchaseUseCase } from './register-purchase.usecase';
@@ -8,3 +9,5 @@ export { CreateProductUseCase } from './create-product.usecase';
 export { UpdateProductUseCase } from './update-product.usecase';
 export { DeleteProductUseCase } from './delete-product.usecase';
 export { GetAllUsersUseCase } from './get-all-users.usecase';
+export { GetRecentPurchasesUseCase } from './get-recent-purchases.usecase';
+export { GetInventoryHistoryByProductUseCase } from './get-inventory-history-by-product.usecase';

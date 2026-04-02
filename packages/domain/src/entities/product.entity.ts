@@ -14,6 +14,12 @@ export interface Product {
   minStock: number | null;
   /** Usuario asignado para conteo. null = visible para todos */
   assignedUserId: string | null;
+  /** Nombre del empaque de compra. Ej: "paquete", "galón", "caja". null = sin empaque */
+  packageUnit: string | null;
+  /** Cantidad de unidades de conteo por empaque. Ej: 20 pz/paquete, 20 L/galón */
+  packageSize: number | null;
+  /** Código de barras para identificación rápida */
+  barcode: string | null;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -37,44 +37,32 @@ function DifferenceBadge({
 
   const level = getDifferenceLevel(difference, initialStock);
 
-  const styles: Record<DifferenceLevel, { bg: string; color: string; label: string }> = {
-    normal: { bg: colors.successLight, color: colors.success, label: `${difference}` },
-    high: { bg: colors.warningLight, color: colors.warning, label: `${difference}` },
-    error: { bg: colors.dangerLight, color: colors.danger, label: `${difference}` },
+  const styles: Record<DifferenceLevel, { bg: string; color: string }> = {
+    normal: { bg: colors.successLight, color: colors.success },
+    high: { bg: colors.warningLight, color: colors.warning },
+    error: { bg: colors.dangerLight, color: colors.danger },
   };
 
-  const { bg, color, label } = styles[level];
+  const { bg, color } = styles[level];
 
   return (
     <span
       style={{
         display: 'inline-block',
-        padding: `2px ${spacing.xs}`,
-        borderRadius: radius.sm,
+        padding: '3px 10px',
+        borderRadius: radius.full,
         backgroundColor: bg,
         color,
-        fontSize: fontSize.sm,
-        fontWeight: 600,
-        minWidth: '36px',
+        fontSize: '12px',
+        fontWeight: 700,
+        minWidth: '40px',
         textAlign: 'center',
       }}
     >
-      {label}
+      {difference > 0 ? '+' : ''}
+      {difference}
     </span>
   );
-}
-
-function DifferenceIndicator({
-  difference,
-  initialStock,
-}: {
-  difference: number | null;
-  initialStock: number | null;
-}) {
-  if (difference === null) return null;
-  const level = getDifferenceLevel(difference, initialStock);
-  const icons: Record<DifferenceLevel, string> = { normal: '🟢', high: '🟡', error: '🔴' };
-  return <span style={{ marginRight: spacing.xs }}>{icons[level]}</span>;
 }
 
 export function HistoryTable({ items, loading }: Props) {
@@ -109,102 +97,112 @@ export function HistoryTable({ items, loading }: Props) {
   }
 
   return (
-    <div style={{ overflowX: 'auto' }}>
-      {/* Vista móvil: cards */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.sm }}>
-        {items.map((item) => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      {items.map((item) => (
+        <div
+          key={item.id}
+          style={{
+            backgroundColor: colors.surface,
+            border: `1px solid ${colors.border}`,
+            borderRadius: radius.md,
+            padding: '16px 20px',
+          }}
+        >
+          {/* Fecha */}
           <div
-            key={item.id}
             style={{
-              backgroundColor: colors.surface,
-              border: `1px solid ${colors.border}`,
-              borderRadius: radius.md,
-              padding: spacing.md,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '10px',
             }}
           >
-            {/* Fecha y estado */}
+            <span style={{ fontWeight: 700, fontSize: fontSize.base, color: colors.text }}>
+              {formatDate(item.date)}
+            </span>
+            <DifferenceBadge difference={item.difference} initialStock={item.initialStock} />
+          </div>
+
+          {item.qualitativeValue !== null ? (
+            <div style={{ fontSize: fontSize.sm, color: colors.textMuted }}>
+              Valor:{' '}
+              <span style={{ color: colors.text, fontWeight: 600 }}>{item.qualitativeValue}</span>
+            </div>
+          ) : (
             <div
               style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: spacing.sm,
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: '8px 16px',
               }}
             >
-              <span style={{ fontWeight: 600, fontSize: fontSize.base, color: colors.text }}>
-                {formatDate(item.date)}
-              </span>
-              <DifferenceIndicator difference={item.difference} initialStock={item.initialStock} />
+              <div>
+                <div
+                  style={{
+                    fontSize: '10px',
+                    fontWeight: 700,
+                    letterSpacing: '0.06em',
+                    textTransform: 'uppercase',
+                    color: colors.textMuted,
+                    marginBottom: '2px',
+                  }}
+                >
+                  Inicial
+                </div>
+                <div
+                  style={{
+                    fontSize: '20px',
+                    fontWeight: 900,
+                    letterSpacing: '-0.02em',
+                    color: colors.text,
+                    lineHeight: 1,
+                  }}
+                >
+                  {item.initialStock !== null ? item.initialStock : '—'}
+                </div>
+              </div>
+              <div>
+                <div
+                  style={{
+                    fontSize: '10px',
+                    fontWeight: 700,
+                    letterSpacing: '0.06em',
+                    textTransform: 'uppercase',
+                    color: colors.textMuted,
+                    marginBottom: '2px',
+                  }}
+                >
+                  Final
+                </div>
+                <div
+                  style={{
+                    fontSize: '20px',
+                    fontWeight: 900,
+                    letterSpacing: '-0.02em',
+                    color: colors.text,
+                    lineHeight: 1,
+                  }}
+                >
+                  {item.finalStock !== null ? item.finalStock : '—'}
+                </div>
+              </div>
             </div>
+          )}
 
-            {/* Valor cualitativo */}
-            {item.qualitativeValue !== null ? (
-              <div style={{ color: colors.textMuted, fontSize: fontSize.sm }}>
-                Valor:{' '}
-                <span style={{ color: colors.text, fontWeight: 500 }}>{item.qualitativeValue}</span>
-              </div>
-            ) : (
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1fr 1fr',
-                  gap: spacing.sm,
-                  marginTop: spacing.xs,
-                }}
-              >
-                <div>
-                  <div style={{ fontSize: fontSize.sm, color: colors.textMuted }}>
-                    Stock inicial
-                  </div>
-                  <div style={{ fontSize: fontSize.md, fontWeight: 500, color: colors.text }}>
-                    {item.initialStock !== null ? item.initialStock : '—'}
-                  </div>
-                </div>
-                <div>
-                  <div style={{ fontSize: fontSize.sm, color: colors.textMuted }}>Stock final</div>
-                  <div style={{ fontSize: fontSize.md, fontWeight: 500, color: colors.text }}>
-                    {item.finalStock !== null ? item.finalStock : '—'}
-                  </div>
-                </div>
-                <div>
-                  <div style={{ fontSize: fontSize.sm, color: colors.textMuted }}>Diferencia</div>
-                  <DifferenceBadge difference={item.difference} initialStock={item.initialStock} />
-                </div>
-              </div>
-            )}
-
-            {/* Notas */}
-            {item.notes && (
-              <div
-                style={{
-                  marginTop: spacing.sm,
-                  fontSize: fontSize.sm,
-                  color: colors.textMuted,
-                  fontStyle: 'italic',
-                }}
-              >
-                {item.notes}
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {/* Leyenda */}
-      <div
-        style={{
-          marginTop: spacing.md,
-          display: 'flex',
-          gap: spacing.md,
-          flexWrap: 'wrap',
-          fontSize: fontSize.sm,
-          color: colors.textMuted,
-        }}
-      >
-        <span>🟢 Consumo normal</span>
-        <span>🟡 Consumo alto (revisar)</span>
-        <span>🔴 Posible error o inconsistencia</span>
-      </div>
+          {item.notes && (
+            <p
+              style={{
+                margin: '10px 0 0',
+                fontSize: fontSize.sm,
+                color: colors.textMuted,
+                fontStyle: 'italic',
+              }}
+            >
+              {item.notes}
+            </p>
+          )}
+        </div>
+      ))}
     </div>
   );
 }

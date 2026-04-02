@@ -1,22 +1,33 @@
-// Design tokens — mobile-first
-// Áreas táctiles mínimas: 44px. Tipografía mínima: 14px body, 16px inputs.
+// Design tokens — Trailer Burger Hall brand (from Stitch)
+// Mobile-first. Áreas táctiles mínimas: 44px.
 
 export const colors = {
-  primary: '#2563eb',
-  primaryDark: '#1d4ed8',
-  primaryLight: '#eff6ff',
-  danger: '#dc2626',
-  dangerLight: '#fef2f2',
-  success: '#16a34a',
-  successLight: '#f0fdf4',
+  // Brand
+  primary: '#A77B46',
+  primaryDark: '#8B6235',
+  primaryLight: '#f7f3f0',
+
+  // States
+  danger: '#ba1a1a',
+  dangerLight: '#ffdad6',
+  success: '#37A725',
+  successLight: '#e8f5e3',
   warning: '#d97706',
   warningLight: '#fffbeb',
-  bg: '#f3f4f6',
+
+  // Surfaces
+  bg: '#fdfcfb',
   surface: '#ffffff',
-  border: '#e5e7eb',
-  text: '#111827',
-  textMuted: '#6b7280',
-  textLight: '#9ca3af',
+  surfaceLow: '#f7f3f0',
+  surfaceHigh: '#ebe3db',
+
+  // Text
+  text: '#453e38',
+  textMuted: '#82756a',
+  textLight: '#a89282',
+
+  // Border
+  border: '#d7ccc0',
 };
 
 export const spacing = {
@@ -28,12 +39,14 @@ export const spacing = {
 };
 
 export const radius = {
-  sm: '6px',
+  sm: '8px',
   md: '12px',
   lg: '16px',
+  full: '9999px',
 };
 
 export const fontSize = {
+  xs: '11px',
   sm: '13px',
   base: '14px',
   md: '16px',
@@ -42,5 +55,10 @@ export const fontSize = {
   '2xl': '24px',
 };
 
-// Altura mínima de tap targets (44px según WCAG)
+export const transition = {
+  fast: '150ms ease',
+  base: '200ms ease',
+  slow: '300ms ease',
+};
+
 export const minTapTarget = '44px';

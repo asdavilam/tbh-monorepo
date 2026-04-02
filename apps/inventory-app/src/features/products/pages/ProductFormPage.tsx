@@ -7,10 +7,17 @@ import { createProduct, updateProduct, getAllProducts, getAllUsers } from '../..
 import { useAuth } from '../../../shared/contexts/AuthContext';
 import { Layout } from '../../../shared/components/Layout';
 import { colors, fontSize, radius, spacing } from '../../../shared/theme';
+import { BarcodeScannerButton } from '../components/BarcodeScannerButton';
 
 const PRODUCT_TYPES: ProductType[] = ['raw_material', 'disposable', 'basic'];
 const UNIT_TYPES: UnitType[] = ['unit', 'fraction', 'qualitative'];
 const ALL_DAYS: DayOfWeek[] = [0, 1, 2, 3, 4, 5, 6];
+
+const UNIT_LABEL_OPTIONS: Record<UnitType, string[]> = {
+  unit: ['pz', 'bolsa', 'caja', 'lata', 'sobre', 'rollo'],
+  fraction: ['g', 'kg', 'ml', 'l'],
+  qualitative: [],
+};
 
 interface FormState {
   name: string;
@@ -21,6 +28,9 @@ interface FormState {
   countDays: DayOfWeek[];
   minStock: string;
   assignedUserId: string;
+  packageUnit: string;
+  packageSize: string;
+  barcode: string;
 }
 
 const EMPTY_FORM: FormState = {
@@ -32,12 +42,9 @@ const EMPTY_FORM: FormState = {
   countDays: [],
   minStock: '',
   assignedUserId: '',
-};
-
-const UNIT_LABEL_SUGGESTIONS: Record<UnitType, string> = {
-  unit: 'pz',
-  fraction: 'g',
-  qualitative: '—',
+  packageUnit: '',
+  packageSize: '',
+  barcode: '',
 };
 
 export function ProductFormPage() {
@@ -52,7 +59,6 @@ export function ProductFormPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  // Cargar usuarios para el selector de asignación
   useEffect(() => {
     if (!user) return;
     getAllUsers
@@ -61,7 +67,6 @@ export function ProductFormPage() {
       .catch(() => setUsers([]));
   }, [user?.id]);
 
-  // En modo edición, cargar datos del producto
   useEffect(() => {
     if (!isEdit || !id || !user) return;
     setLoading(true);
@@ -82,6 +87,9 @@ export function ProductFormPage() {
           countDays: product.countDays,
           minStock: product.minStock !== null ? String(product.minStock) : '',
           assignedUserId: product.assignedUserId ?? '',
+          packageUnit: product.packageUnit ?? '',
+          packageSize: product.packageSize !== null ? String(product.packageSize) : '',
+          barcode: product.barcode ?? '',
         });
       })
       .catch(() => setError('No se pudo cargar el producto'))
@@ -89,12 +97,14 @@ export function ProductFormPage() {
   }, [isEdit, id, user?.id]);
 
   function handleUnitTypeChange(unitType: UnitType) {
+    const labels = UNIT_LABEL_OPTIONS[unitType];
     setForm((prev) => ({
       ...prev,
       unitType,
-      unitLabel: UNIT_LABEL_SUGGESTIONS[unitType],
-      // Qualitative no tiene stock mínimo
+      unitLabel: labels[0] ?? '',
       minStock: unitType === 'qualitative' ? '' : prev.minStock,
+      packageUnit: unitType === 'qualitative' ? '' : prev.packageUnit,
+      packageSize: unitType === 'qualitative' ? '' : prev.packageSize,
     }));
   }
 
@@ -119,9 +129,14 @@ export function ProductFormPage() {
       setError('Selecciona al menos un día para la frecuencia específica');
       return;
     }
+    if (form.packageUnit && !form.packageSize) {
+      setError('Indica la cantidad por empaque');
+      return;
+    }
 
     const minStockValue =
       form.unitType !== 'qualitative' && form.minStock !== '' ? Number(form.minStock) : null;
+    const packageSizeValue = form.packageUnit && form.packageSize ? Number(form.packageSize) : null;
 
     setSaving(true);
     setError('');
@@ -138,6 +153,9 @@ export function ProductFormPage() {
           countDays: form.countDays,
           minStock: minStockValue,
           assignedUserId: form.assignedUserId || null,
+          packageUnit: form.packageUnit || null,
+          packageSize: packageSizeValue,
+          barcode: form.barcode || null,
         });
       } else {
         await createProduct.execute(user.id, {
@@ -149,6 +167,9 @@ export function ProductFormPage() {
           countDays: form.countDays,
           minStock: minStockValue,
           assignedUserId: form.assignedUserId || null,
+          packageUnit: form.packageUnit || null,
+          packageSize: packageSizeValue,
+          barcode: form.barcode || null,
         });
       }
       navigate('/productos');
@@ -167,15 +188,18 @@ export function ProductFormPage() {
     );
   }
 
+  const labelOptions = UNIT_LABEL_OPTIONS[form.unitType];
+  const isQualitative = form.unitType === 'qualitative';
+
   return (
     <Layout title={isEdit ? 'Editar producto' : 'Nuevo producto'}>
       <form
         onSubmit={handleSubmit}
-        style={{ display: 'flex', flexDirection: 'column', gap: spacing.md }}
+        style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}
       >
         {/* Nombre */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          <label style={labelStyle}>Nombre</label>
+        <div style={fieldGroup}>
+          <label style={labelStyle}>NOMBRE</label>
           <input
             type="text"
             value={form.name}
@@ -187,8 +211,8 @@ export function ProductFormPage() {
         </div>
 
         {/* Tipo de producto */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          <label style={labelStyle}>Tipo</label>
+        <div style={fieldGroup}>
+          <label style={labelStyle}>TIPO DE PRODUCTO</label>
           <select
             value={form.type}
             onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as ProductType }))}
@@ -202,40 +226,89 @@ export function ProductFormPage() {
           </select>
         </div>
 
-        {/* Tipo de unidad */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          <label style={labelStyle}>Tipo de unidad</label>
-          <select
-            value={form.unitType}
-            onChange={(e) => handleUnitTypeChange(e.target.value as UnitType)}
-            style={selectStyle}
+        {/* Tipo de unidad — segmented buttons */}
+        <div style={fieldGroup}>
+          <label style={labelStyle}>TIPO DE UNIDAD</label>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr 1fr',
+              gap: '8px',
+            }}
           >
-            {UNIT_TYPES.map((u) => (
-              <option key={u} value={u}>
-                {UNIT_TYPE_LABELS[u]}
-              </option>
-            ))}
-          </select>
+            {UNIT_TYPES.map((u) => {
+              const active = form.unitType === u;
+              return (
+                <button
+                  key={u}
+                  type="button"
+                  onClick={() => handleUnitTypeChange(u)}
+                  style={{
+                    padding: '10px 8px',
+                    borderRadius: radius.sm,
+                    border: `2px solid ${active ? colors.primary : colors.border}`,
+                    backgroundColor: active ? colors.primaryLight : colors.surface,
+                    color: active ? colors.primary : colors.textMuted,
+                    fontSize: '12px',
+                    fontWeight: active ? 700 : 500,
+                    cursor: 'pointer',
+                    letterSpacing: '0.02em',
+                    textTransform: 'uppercase',
+                    minHeight: '44px',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  {UNIT_TYPE_LABELS[u]}
+                </button>
+              );
+            })}
+          </div>
+          {/* Descripción contextual */}
+          <p style={{ margin: 0, fontSize: '12px', color: colors.textMuted, lineHeight: 1.4 }}>
+            {form.unitType === 'unit' && 'Conteo por piezas completas: bolsas, latas, cajas...'}
+            {form.unitType === 'fraction' && 'Conteo por cantidad: gramos, litros, kilos...'}
+            {form.unitType === 'qualitative' && 'Conteo por percepción: mucho / poco / nada'}
+          </p>
         </div>
 
-        {/* Etiqueta de unidad (no aplica para cualitativo) */}
-        {form.unitType !== 'qualitative' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <label style={labelStyle}>Etiqueta de unidad</label>
-            <input
-              type="text"
-              value={form.unitLabel}
-              onChange={(e) => setForm((f) => ({ ...f, unitLabel: e.target.value }))}
-              required
-              placeholder="Ej: pz, kg, l"
-              style={inputStyle}
-            />
+        {/* Etiqueta de unidad — solo para unit y fraction */}
+        {!isQualitative && (
+          <div style={fieldGroup}>
+            <label style={labelStyle}>ETIQUETA DE UNIDAD</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              {labelOptions.map((opt) => {
+                const active = form.unitLabel === opt;
+                return (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => setForm((f) => ({ ...f, unitLabel: opt }))}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: '999px',
+                      border: `2px solid ${active ? colors.primary : colors.border}`,
+                      backgroundColor: active ? colors.primaryLight : colors.surface,
+                      color: active ? colors.primary : colors.text,
+                      fontSize: '14px',
+                      fontWeight: active ? 700 : 500,
+                      cursor: 'pointer',
+                      minHeight: '44px',
+                    }}
+                  >
+                    {opt}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
 
+        {/* Separador */}
+        <div style={{ height: '1px', backgroundColor: colors.border }} />
+
         {/* Frecuencia de conteo */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          <label style={labelStyle}>Frecuencia de conteo</label>
+        <div style={fieldGroup}>
+          <label style={labelStyle}>FRECUENCIA DE CONTEO</label>
           <select
             value={form.countFrequency}
             onChange={(e) =>
@@ -252,10 +325,9 @@ export function ProductFormPage() {
           </select>
         </div>
 
-        {/* Días específicos */}
         {form.countFrequency === 'specific_days' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <label style={labelStyle}>Días activos</label>
+          <div style={fieldGroup}>
+            <label style={labelStyle}>DÍAS ACTIVOS</label>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
               {ALL_DAYS.map((day) => {
                 const active = form.countDays.includes(day);
@@ -284,37 +356,164 @@ export function ProductFormPage() {
           </div>
         )}
 
-        {/* Stock mínimo (no aplica para cualitativo) */}
-        {form.unitType !== 'qualitative' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        {/* Stock mínimo */}
+        {!isQualitative && (
+          <div style={fieldGroup}>
             <label style={labelStyle}>
-              Stock mínimo{' '}
-              <span style={{ color: colors.textMuted, fontWeight: 400 }}>(opcional)</span>
+              STOCK MÍNIMO{' '}
+              <span style={{ color: colors.textMuted, fontWeight: 400, textTransform: 'none' }}>
+                (opcional)
+              </span>
             </label>
-            <input
-              type="number"
-              min="0"
-              step="any"
-              value={form.minStock}
-              onChange={(e) => setForm((f) => ({ ...f, minStock: e.target.value }))}
-              placeholder="Ej: 10"
-              style={inputStyle}
-            />
+            <div style={{ position: 'relative' }}>
+              <input
+                type="number"
+                min="0"
+                step="any"
+                value={form.minStock}
+                onChange={(e) => setForm((f) => ({ ...f, minStock: e.target.value }))}
+                placeholder="Ej: 10"
+                style={inputStyle}
+              />
+              {form.unitLabel && (
+                <span
+                  style={{
+                    position: 'absolute',
+                    right: '14px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    color: colors.textMuted,
+                    pointerEvents: 'none',
+                  }}
+                >
+                  {form.unitLabel}
+                </span>
+              )}
+            </div>
           </div>
         )}
 
-        {/* Usuario asignado */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        {/* Separador */}
+        <div style={{ height: '1px', backgroundColor: colors.border }} />
+
+        {/* Empaque de compra */}
+        {!isQualitative && (
+          <div style={fieldGroup}>
+            <label style={labelStyle}>
+              EMPAQUE DE COMPRA{' '}
+              <span style={{ color: colors.textMuted, fontWeight: 400, textTransform: 'none' }}>
+                (opcional)
+              </span>
+            </label>
+            <p style={{ margin: 0, fontSize: '12px', color: colors.textMuted, lineHeight: 1.4 }}>
+              Define cómo se compra este producto. Permite registrar compras por empaque y calcular
+              stock automáticamente.
+            </p>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
+              {/* Nombre del empaque */}
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <span style={subLabelStyle}>Nombre del empaque</span>
+                <input
+                  type="text"
+                  value={form.packageUnit}
+                  onChange={(e) => setForm((f) => ({ ...f, packageUnit: e.target.value }))}
+                  placeholder="paquete, galón, caja..."
+                  style={inputStyle}
+                />
+              </div>
+              {/* Cantidad */}
+              <div style={{ width: '100px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <span style={subLabelStyle}>Cantidad</span>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type="number"
+                    min="0.01"
+                    step="any"
+                    value={form.packageSize}
+                    onChange={(e) => setForm((f) => ({ ...f, packageSize: e.target.value }))}
+                    placeholder="Ej: 20"
+                    style={{ ...inputStyle, paddingRight: form.unitLabel ? '36px' : '12px' }}
+                  />
+                  {form.unitLabel && (
+                    <span
+                      style={{
+                        position: 'absolute',
+                        right: '10px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        color: colors.textMuted,
+                        pointerEvents: 'none',
+                      }}
+                    >
+                      {form.unitLabel}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+            {/* Preview de la conversión */}
+            {form.packageUnit.trim() && form.packageSize.trim() && Number(form.packageSize) > 0 && (
+              <div
+                style={{
+                  backgroundColor: colors.surfaceLow,
+                  border: `1px solid ${colors.border}`,
+                  borderRadius: radius.sm,
+                  padding: '10px 14px',
+                  fontSize: '13px',
+                  color: colors.text,
+                }}
+              >
+                <span style={{ color: colors.textMuted }}>Conversión: </span>
+                <strong>
+                  1 {form.packageUnit} = {form.packageSize} {form.unitLabel}
+                </strong>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Separador */}
+        <div style={{ height: '1px', backgroundColor: colors.border }} />
+
+        {/* Código de barras */}
+        <div style={fieldGroup}>
           <label style={labelStyle}>
-            Usuario asignado{' '}
-            <span style={{ color: colors.textMuted, fontWeight: 400 }}>(opcional)</span>
+            CÓDIGO DE BARRAS{' '}
+            <span style={{ color: colors.textMuted, fontWeight: 400, textTransform: 'none' }}>
+              (opcional)
+            </span>
+          </label>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <input
+              type="text"
+              value={form.barcode}
+              onChange={(e) => setForm((f) => ({ ...f, barcode: e.target.value }))}
+              placeholder="Ej: 7501234567890"
+              style={{ ...inputStyle, flex: 1 }}
+              inputMode="numeric"
+            />
+            <BarcodeScannerButton onScan={(code) => setForm((f) => ({ ...f, barcode: code }))} />
+          </div>
+        </div>
+
+        {/* Usuario asignado */}
+        <div style={fieldGroup}>
+          <label style={labelStyle}>
+            USUARIO ASIGNADO{' '}
+            <span style={{ color: colors.textMuted, fontWeight: 400, textTransform: 'none' }}>
+              (opcional)
+            </span>
           </label>
           <select
             value={form.assignedUserId}
             onChange={(e) => setForm((f) => ({ ...f, assignedUserId: e.target.value }))}
             style={selectStyle}
           >
-            <option value="">Sin asignar (visible para todos)</option>
+            <option value="">Sin asignar — visible para todos</option>
             {users.map((u) => (
               <option key={u.id} value={u.id}>
                 {u.name}
@@ -339,7 +538,7 @@ export function ProductFormPage() {
         )}
 
         {/* Acciones */}
-        <div style={{ display: 'flex', gap: spacing.sm }}>
+        <div style={{ display: 'flex', gap: spacing.sm, paddingBottom: spacing.md }}>
           <button
             type="button"
             onClick={() => navigate('/productos')}
@@ -353,7 +552,7 @@ export function ProductFormPage() {
               fontSize: fontSize.md,
               fontWeight: 500,
               cursor: 'pointer',
-              minHeight: '44px',
+              minHeight: '52px',
             }}
           >
             Cancelar
@@ -369,12 +568,15 @@ export function ProductFormPage() {
               borderRadius: radius.sm,
               padding: '14px',
               fontSize: fontSize.md,
-              fontWeight: 600,
+              fontWeight: 700,
+              letterSpacing: '0.04em',
+              textTransform: 'uppercase',
               cursor: saving ? 'not-allowed' : 'pointer',
-              minHeight: '44px',
+              minHeight: '52px',
+              boxShadow: saving ? 'none' : `0 4px 12px ${colors.primary}33`,
             }}
           >
-            {saving ? 'Guardando...' : isEdit ? 'Guardar cambios' : 'Crear producto'}
+            {saving ? 'Guardando...' : isEdit ? 'GUARDAR CAMBIOS' : 'CREAR PRODUCTO'}
           </button>
         </div>
       </form>
@@ -382,29 +584,46 @@ export function ProductFormPage() {
   );
 }
 
+const fieldGroup: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '8px',
+};
+
 const labelStyle: React.CSSProperties = {
-  fontSize: '14px',
-  fontWeight: 500,
-  color: colors.text,
+  fontSize: '10px',
+  fontWeight: 700,
+  color: colors.textMuted,
+  letterSpacing: '0.08em',
+  textTransform: 'uppercase',
+};
+
+const subLabelStyle: React.CSSProperties = {
+  fontSize: '11px',
+  fontWeight: 600,
+  color: colors.textMuted,
 };
 
 const inputStyle: React.CSSProperties = {
-  padding: '12px',
+  padding: '0 14px',
   border: `1px solid ${colors.border}`,
   borderRadius: radius.sm,
   fontSize: '16px',
-  minHeight: '44px',
+  height: '52px',
   boxSizing: 'border-box',
   width: '100%',
+  backgroundColor: colors.surfaceLow,
+  color: colors.text,
 };
 
 const selectStyle: React.CSSProperties = {
-  padding: '12px',
+  padding: '0 14px',
   border: `1px solid ${colors.border}`,
   borderRadius: radius.sm,
   fontSize: '16px',
-  backgroundColor: colors.surface,
-  minHeight: '44px',
+  backgroundColor: colors.surfaceLow,
+  height: '52px',
   appearance: 'auto',
   width: '100%',
+  color: colors.text,
 };

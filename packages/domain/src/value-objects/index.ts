@@ -27,8 +27,8 @@ export const PRODUCT_TYPE_LABELS: Record<ProductType, string> = {
 };
 
 export const UNIT_TYPE_LABELS: Record<UnitType, string> = {
-  unit: 'Unidad (pz)',
-  fraction: 'Fracción (g, l)',
+  unit: 'Unidad',
+  fraction: 'Fracción',
   qualitative: 'Cualitativo',
 };
 

@@ -45,38 +45,58 @@ export function ProductsPage() {
   return (
     <Layout title="Productos">
       <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.md }}>
-        {/* Botón nuevo producto */}
+        {/* New product button */}
         <button
           onClick={() => navigate('/productos/nuevo')}
           style={{
             backgroundColor: colors.primary,
             color: '#fff',
             border: 'none',
-            borderRadius: radius.sm,
-            padding: '12px 16px',
-            fontSize: fontSize.md,
-            fontWeight: 600,
+            borderRadius: radius.md,
+            padding: '14px 20px',
+            fontSize: '13px',
+            fontWeight: 700,
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase',
             cursor: 'pointer',
-            minHeight: '44px',
+            minHeight: '48px',
             alignSelf: 'flex-start',
+            boxShadow: `0 4px 14px ${colors.primary}33`,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
           }}
         >
-          + Nuevo producto
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          Nuevo producto
         </button>
 
         {deleteError && (
-          <p
+          <div
             style={{
-              margin: 0,
-              fontSize: fontSize.sm,
-              color: colors.danger,
               backgroundColor: colors.dangerLight,
-              padding: '10px 12px',
-              borderRadius: radius.sm,
+              color: colors.danger,
+              padding: '12px 14px',
+              borderRadius: radius.md,
+              fontSize: fontSize.sm,
+              fontWeight: 500,
             }}
           >
             {deleteError}
-          </p>
+          </div>
         )}
 
         {loading && (
@@ -86,18 +106,18 @@ export function ProductsPage() {
         )}
 
         {error && !loading && (
-          <p
+          <div
             style={{
-              margin: 0,
-              fontSize: fontSize.base,
-              color: colors.danger,
               backgroundColor: colors.dangerLight,
-              padding: '10px 12px',
-              borderRadius: radius.sm,
+              color: colors.danger,
+              padding: '12px 14px',
+              borderRadius: radius.md,
+              fontSize: fontSize.base,
+              fontWeight: 500,
             }}
           >
             {error}
-          </p>
+          </div>
         )}
 
         {!loading && !error && products.length === 0 && (
@@ -106,7 +126,7 @@ export function ProductsPage() {
           </p>
         )}
 
-        {/* Lista de productos */}
+        {/* Product list */}
         {products.map((product) => (
           <div
             key={product.id}
@@ -114,13 +134,13 @@ export function ProductsPage() {
               backgroundColor: colors.surface,
               border: `1px solid ${colors.border}`,
               borderRadius: radius.md,
-              padding: spacing.md,
+              padding: '18px 20px',
               display: 'flex',
               flexDirection: 'column',
-              gap: '8px',
+              gap: '10px',
             }}
           >
-            {/* Nombre y tipo */}
+            {/* Name + type */}
             <div
               style={{
                 display: 'flex',
@@ -129,62 +149,74 @@ export function ProductsPage() {
                 gap: '8px',
               }}
             >
-              <span style={{ fontWeight: 600, fontSize: fontSize.md, color: colors.text, flex: 1 }}>
+              <span
+                style={{
+                  fontWeight: 700,
+                  fontSize: fontSize.md,
+                  color: colors.text,
+                  flex: 1,
+                  textTransform: 'uppercase',
+                  letterSpacing: '-0.01em',
+                }}
+              >
                 {product.name}
               </span>
               <span
                 style={{
-                  fontSize: fontSize.sm,
-                  color: colors.textMuted,
-                  backgroundColor: colors.bg,
-                  padding: '2px 8px',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  color: colors.primary,
+                  backgroundColor: colors.surfaceLow,
+                  padding: '3px 10px',
                   borderRadius: '999px',
                   whiteSpace: 'nowrap',
+                  letterSpacing: '0.04em',
                 }}
               >
                 {PRODUCT_TYPE_LABELS[product.type]}
               </span>
             </div>
 
-            {/* Detalles */}
+            {/* Details */}
             <div
               style={{
                 display: 'grid',
                 gridTemplateColumns: '1fr 1fr',
-                gap: '4px 12px',
+                gap: '6px 16px',
                 fontSize: fontSize.sm,
                 color: colors.textMuted,
               }}
             >
               <span>
-                <strong style={{ color: colors.text }}>Unidad:</strong>{' '}
+                <span style={{ fontWeight: 600, color: colors.text }}>Unidad:</span>{' '}
                 {UNIT_TYPE_LABELS[product.unitType]} ({product.unitLabel})
               </span>
               <span>
-                <strong style={{ color: colors.text }}>Stock mín:</strong>{' '}
+                <span style={{ fontWeight: 600, color: colors.text }}>Stock mín:</span>{' '}
                 {product.minStock !== null ? product.minStock : '—'}
               </span>
               <span style={{ gridColumn: '1 / -1' }}>
-                <strong style={{ color: colors.text }}>Asignado a:</strong>{' '}
+                <span style={{ fontWeight: 600, color: colors.text }}>Asignado a:</span>{' '}
                 {getUserName(product.assignedUserId)}
               </span>
             </div>
 
-            {/* Acciones */}
-            <div style={{ display: 'flex', gap: spacing.sm, marginTop: '4px' }}>
+            {/* Actions */}
+            <div style={{ display: 'flex', gap: '8px', marginTop: '2px' }}>
               <button
                 onClick={() => navigate(`/productos/${product.id}/editar`)}
                 style={{
                   flex: 1,
-                  backgroundColor: colors.primaryLight,
+                  backgroundColor: colors.surfaceLow,
                   color: colors.primary,
-                  border: `1px solid ${colors.primary}`,
+                  border: `1px solid ${colors.border}`,
                   borderRadius: radius.sm,
-                  padding: '8px',
-                  fontSize: fontSize.base,
-                  fontWeight: 500,
+                  padding: '10px',
+                  fontSize: '13px',
+                  fontWeight: 700,
                   cursor: 'pointer',
                   minHeight: '44px',
+                  letterSpacing: '0.04em',
                 }}
               >
                 Editar
@@ -196,14 +228,15 @@ export function ProductsPage() {
                   flex: 1,
                   backgroundColor: colors.dangerLight,
                   color: colors.danger,
-                  border: `1px solid ${colors.danger}`,
+                  border: `1px solid ${colors.danger}44`,
                   borderRadius: radius.sm,
-                  padding: '8px',
-                  fontSize: fontSize.base,
-                  fontWeight: 500,
+                  padding: '10px',
+                  fontSize: '13px',
+                  fontWeight: 700,
                   cursor: deletingId === product.id ? 'not-allowed' : 'pointer',
                   minHeight: '44px',
                   opacity: deletingId === product.id ? 0.6 : 1,
+                  letterSpacing: '0.04em',
                 }}
               >
                 {deletingId === product.id ? 'Eliminando...' : 'Eliminar'}

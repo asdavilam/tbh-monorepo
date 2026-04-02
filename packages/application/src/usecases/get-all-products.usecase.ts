@@ -13,6 +13,9 @@ function toProductResponseDto(product: Product): ProductResponseDto {
     countDays: product.countDays,
     minStock: product.minStock,
     assignedUserId: product.assignedUserId,
+    packageUnit: product.packageUnit,
+    packageSize: product.packageSize,
+    barcode: product.barcode,
     createdAt: product.createdAt.toISOString(),
     updatedAt: product.updatedAt.toISOString(),
   };

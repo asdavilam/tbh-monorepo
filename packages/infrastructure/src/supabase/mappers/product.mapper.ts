@@ -10,6 +10,9 @@ export interface ProductRow {
   count_days: number[];
   min_stock: number | null;
   assigned_user_id: string | null;
+  package_unit: string | null;
+  package_size: number | null;
+  barcode: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -25,6 +28,9 @@ export function toProductEntity(row: ProductRow): Product {
     countDays: (row.count_days ?? []) as DayOfWeek[],
     minStock: row.min_stock,
     assignedUserId: row.assigned_user_id,
+    packageUnit: row.package_unit,
+    packageSize: row.package_size,
+    barcode: row.barcode,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
   };
@@ -42,5 +48,8 @@ export function toProductRow(
     count_days: product.countDays,
     min_stock: product.minStock,
     assigned_user_id: product.assignedUserId,
+    package_unit: product.packageUnit,
+    package_size: product.packageSize,
+    barcode: product.barcode,
   };
 }

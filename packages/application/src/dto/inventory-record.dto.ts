@@ -60,4 +60,8 @@ export interface InventoryItemDto {
   unitLabel: string;
   /** Stock inicial calculado desde el último registro + compras posteriores. Null si no hay historial o es cualitativo. */
   initialStock: number | null;
+  /** Nombre del empaque. Ej: "galón". Solo aplica cuando unitType === 'fraction' y hay empaque definido. */
+  packageUnit: string | null;
+  /** Cantidad de unidades por empaque. Permite calcular fracciones automáticamente. */
+  packageSize: number | null;
 }

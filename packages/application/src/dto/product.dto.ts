@@ -9,6 +9,9 @@ export interface CreateProductDto {
   countDays: DayOfWeek[];
   minStock: number | null;
   assignedUserId: string | null;
+  packageUnit: string | null;
+  packageSize: number | null;
+  barcode: string | null;
 }
 
 export interface UpdateProductDto {
@@ -21,6 +24,9 @@ export interface UpdateProductDto {
   countDays?: DayOfWeek[];
   minStock?: number | null;
   assignedUserId?: string | null;
+  packageUnit?: string | null;
+  packageSize?: number | null;
+  barcode?: string | null;
 }
 
 export interface ProductResponseDto {
@@ -33,6 +39,9 @@ export interface ProductResponseDto {
   countDays: DayOfWeek[];
   minStock: number | null;
   assignedUserId: string | null;
+  packageUnit: string | null;
+  packageSize: number | null;
+  barcode: string | null;
   createdAt: string;
   updatedAt: string;
 }

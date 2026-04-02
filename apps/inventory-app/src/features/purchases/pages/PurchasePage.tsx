@@ -1,163 +1,564 @@
-import { useState, type FormEvent } from 'react';
+import { useState, useRef, useEffect, type FormEvent } from 'react';
 import { useAuth } from '../../../shared/contexts/AuthContext';
 import { Layout } from '../../../shared/components/Layout';
-import { colors, fontSize, radius, spacing } from '../../../shared/theme';
+import { colors, fontSize, radius, transition } from '../../../shared/theme';
 import { usePurchase } from '../hooks/usePurchase';
 import { PurchaseHistory } from '../components/PurchaseHistory';
+import { BarcodeScannerButton } from '../../products/components/BarcodeScannerButton';
+
+const QUICK_COUNTS = [1, 2, 3, 4, 5];
 
 export function PurchasePage() {
   const { user } = useAuth();
+  const [search, setSearch] = useState('');
   const [productId, setProductId] = useState('');
   const [quantity, setQuantity] = useState('');
+  const [packageCount, setPackageCount] = useState(1);
   const [notes, setNotes] = useState('');
+  const [barcodeError, setBarcodeError] = useState('');
+
+  const selectedCardRef = useRef<HTMLDivElement>(null);
 
   const { products, history, saving, loadingHistory, success, error, submit } = usePurchase(user!);
 
+  const filtered = search.trim()
+    ? products.filter((p) => p.name.toLowerCase().includes(search.trim().toLowerCase()))
+    : products;
+
   const selectedProduct = products.find((p) => p.id === productId);
+  const hasPackage = Boolean(selectedProduct?.packageUnit && selectedProduct?.packageSize);
+  const calculatedQty = hasPackage ? packageCount * selectedProduct!.packageSize! : null;
+
+  useEffect(() => {
+    if (productId && selectedCardRef.current) {
+      selectedCardRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [productId]);
+
+  function handleSelectProduct(id: string) {
+    setBarcodeError('');
+    setProductId((prev) => (prev === id ? '' : id));
+    setQuantity('');
+    setPackageCount(1);
+  }
+
+  function handleBarcodeScan(barcode: string) {
+    setBarcodeError('');
+    const product = products.find((p) => p.barcode === barcode);
+    if (product) {
+      setProductId(product.id);
+      setSearch('');
+      setQuantity('');
+      setPackageCount(1);
+    } else {
+      setBarcodeError(
+        `Código "${barcode}" no encontrado. Verifica que el producto tenga barcode registrado.`
+      );
+    }
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!productId || !quantity) return;
-    await submit(productId, Number(quantity), notes || undefined);
+    if (!productId) return;
+    const finalQty = hasPackage ? calculatedQty! : Number(quantity);
+    if (!finalQty || finalQty <= 0) return;
+    await submit(productId, finalQty, notes || undefined);
     setProductId('');
     setQuantity('');
+    setPackageCount(1);
     setNotes('');
   }
 
   return (
-    <Layout title="Registrar compra">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.lg }}>
-        <form
-          onSubmit={handleSubmit}
-          style={{ display: 'flex', flexDirection: 'column', gap: spacing.md }}
-        >
-          {success && (
-            <div
+    <Layout title="Registrar Compra">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        {/* ── Success banner ── */}
+        {success && (
+          <div
+            style={{
+              backgroundColor: colors.successLight,
+              border: `1px solid ${colors.success}`,
+              borderRadius: radius.md,
+              padding: '14px 16px',
+              color: colors.success,
+              fontSize: fontSize.base,
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+            }}
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            Compra registrada correctamente
+          </div>
+        )}
+
+        {/* ── Search + Scan ── */}
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+          <div style={{ position: 'relative', flex: 1 }}>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke={colors.textMuted}
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
               style={{
-                backgroundColor: colors.successLight,
-                border: `1px solid ${colors.success}`,
-                borderRadius: radius.sm,
-                padding: '12px',
-                color: colors.success,
-                fontSize: fontSize.base,
-                fontWeight: 500,
+                position: 'absolute',
+                left: '14px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                pointerEvents: 'none',
               }}
             >
-              Compra registrada correctamente
-            </div>
-          )}
-
-          {/* Producto */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <label style={{ fontSize: fontSize.base, fontWeight: 500, color: colors.text }}>
-              Producto
-            </label>
-            <select
-              value={productId}
-              onChange={(e) => setProductId(e.target.value)}
-              required
-              style={{
-                padding: '12px',
-                border: `1px solid ${colors.border}`,
-                borderRadius: radius.sm,
-                fontSize: '16px',
-                backgroundColor: colors.surface,
-                minHeight: '44px',
-                appearance: 'auto',
-              }}
-            >
-              <option value="">Seleccionar producto...</option>
-              {products.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Cantidad */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <label style={{ fontSize: fontSize.base, fontWeight: 500, color: colors.text }}>
-              Cantidad {selectedProduct ? `(${selectedProduct.unitLabel})` : ''}
-            </label>
-            <input
-              type="number"
-              min="0.01"
-              step="any"
-              value={quantity}
-              onChange={(e) => setQuantity(e.target.value)}
-              required
-              placeholder="0"
-              style={{
-                padding: '12px',
-                border: `1px solid ${colors.border}`,
-                borderRadius: radius.sm,
-                fontSize: '16px',
-                minHeight: '44px',
-                boxSizing: 'border-box',
-              }}
-            />
-          </div>
-
-          {/* Notas (opcional) */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <label style={{ fontSize: fontSize.base, fontWeight: 500, color: colors.text }}>
-              Notas <span style={{ color: colors.textMuted, fontWeight: 400 }}>(opcional)</span>
-            </label>
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
             <input
               type="text"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Ej: compra de emergencia"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setBarcodeError('');
+              }}
+              placeholder="Buscar producto..."
+              aria-label="Buscar producto"
               style={{
-                padding: '12px',
+                width: '100%',
+                height: '52px',
+                paddingLeft: '42px',
+                paddingRight: search ? '40px' : '14px',
+                backgroundColor: colors.surfaceLow,
                 border: `1px solid ${colors.border}`,
-                borderRadius: radius.sm,
-                fontSize: '16px',
-                minHeight: '44px',
+                borderRadius: radius.md,
+                fontSize: fontSize.md,
+                color: colors.text,
+                fontWeight: 500,
+                outline: 'none',
                 boxSizing: 'border-box',
               }}
             />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch('')}
+                aria-label="Limpiar búsqueda"
+                style={{
+                  position: 'absolute',
+                  right: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '4px',
+                  color: colors.textMuted,
+                  fontSize: '18px',
+                  lineHeight: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  minWidth: '32px',
+                  minHeight: '32px',
+                }}
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            )}
           </div>
+          <BarcodeScannerButton onScan={handleBarcodeScan} />
+        </div>
 
-          {error && (
+        {barcodeError && (
+          <div
+            style={{
+              backgroundColor: colors.dangerLight,
+              color: colors.danger,
+              padding: '10px 14px',
+              borderRadius: radius.sm,
+              fontSize: fontSize.sm,
+              fontWeight: 500,
+            }}
+          >
+            {barcodeError}
+          </div>
+        )}
+
+        {/* ── Product list ── */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {filtered.length === 0 && (
             <p
               style={{
-                margin: 0,
+                textAlign: 'center',
+                color: colors.textMuted,
                 fontSize: fontSize.sm,
-                color: colors.danger,
-                backgroundColor: colors.dangerLight,
-                padding: '10px 12px',
-                borderRadius: radius.sm,
+                padding: '32px 0',
+                margin: 0,
               }}
             >
-              {error}
+              No se encontraron productos
             </p>
           )}
 
-          <button
-            type="submit"
-            disabled={saving}
-            style={{
-              backgroundColor: saving ? colors.border : colors.primary,
-              color: saving ? colors.textMuted : '#fff',
-              border: 'none',
-              borderRadius: radius.sm,
-              padding: '14px',
-              fontSize: fontSize.md,
-              fontWeight: 600,
-              cursor: saving ? 'not-allowed' : 'pointer',
-              minHeight: '44px',
-            }}
-          >
-            {saving ? 'Guardando...' : 'Registrar compra'}
-          </button>
-        </form>
+          {filtered.map((product) => {
+            const isSelected = productId === product.id;
+            const productHasPackage = Boolean(product.packageUnit && product.packageSize);
+            const calcQty = productHasPackage ? packageCount * product.packageSize! : null;
 
-        <hr style={{ border: 'none', borderTop: `1px solid ${colors.border}`, margin: 0 }} />
+            return (
+              <div key={product.id} ref={isSelected ? selectedCardRef : undefined}>
+                {/* ── Product card (tap to select) ── */}
+                <button
+                  type="button"
+                  onClick={() => handleSelectProduct(product.id)}
+                  aria-expanded={isSelected}
+                  style={{
+                    width: '100%',
+                    padding: '14px 16px',
+                    backgroundColor: isSelected ? colors.primaryLight : colors.surface,
+                    border: `${isSelected ? 2 : 1}px solid ${isSelected ? colors.primary : colors.border}`,
+                    borderBottom: isSelected ? 'none' : undefined,
+                    borderRadius: isSelected ? `${radius.md} ${radius.md} 0 0` : radius.md,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    transition: `background-color ${transition.fast}, border-color ${transition.fast}`,
+                    minHeight: '56px',
+                    gap: '12px',
+                  }}
+                >
+                  <div style={{ minWidth: 0 }}>
+                    <p
+                      style={{
+                        margin: 0,
+                        fontWeight: 700,
+                        fontSize: fontSize.md,
+                        color: isSelected ? colors.primary : colors.text,
+                        letterSpacing: '-0.01em',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                    >
+                      {product.name}
+                    </p>
+                    <p
+                      style={{
+                        margin: '2px 0 0',
+                        fontSize: fontSize.xs,
+                        color: colors.textMuted,
+                        fontWeight: 600,
+                        letterSpacing: '0.06em',
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      {product.unitLabel || product.unitType}
+                      {product.packageUnit ? ` · ${product.packageUnit}` : ''}
+                    </p>
+                  </div>
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke={isSelected ? colors.primary : colors.textMuted}
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                    style={{
+                      flexShrink: 0,
+                      transform: isSelected ? 'rotate(180deg)' : 'rotate(0deg)',
+                      transition: `transform ${transition.base}`,
+                    }}
+                  >
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </button>
+
+                {/* ── Expanded inline form ── */}
+                {isSelected && (
+                  <form
+                    onSubmit={handleSubmit}
+                    style={{
+                      backgroundColor: colors.surfaceLow,
+                      border: `2px solid ${colors.primary}`,
+                      borderTop: 'none',
+                      borderRadius: `0 0 ${radius.md} ${radius.md}`,
+                      padding: '16px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '12px',
+                    }}
+                  >
+                    {/* Quantity — package mode */}
+                    {productHasPackage ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <label style={labelStyle}>
+                          EMPAQUES COMPRADOS
+                          <span
+                            style={{
+                              fontWeight: 400,
+                              textTransform: 'none',
+                              marginLeft: '6px',
+                              color: colors.textMuted,
+                            }}
+                          >
+                            ({product.packageUnit})
+                          </span>
+                        </label>
+
+                        {/* Quick count buttons */}
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          {QUICK_COUNTS.map((n) => (
+                            <button
+                              key={n}
+                              type="button"
+                              onClick={() => setPackageCount(n)}
+                              style={{
+                                flex: 1,
+                                height: '48px',
+                                borderRadius: radius.sm,
+                                border: `2px solid ${packageCount === n ? colors.primary : colors.border}`,
+                                backgroundColor:
+                                  packageCount === n ? colors.primaryLight : colors.surface,
+                                color: packageCount === n ? colors.primary : colors.text,
+                                fontSize: '18px',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                transition: `all ${transition.fast}`,
+                              }}
+                            >
+                              {n}
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Stepper for larger amounts */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <button
+                            type="button"
+                            onClick={() => setPackageCount((c) => Math.max(1, c - 1))}
+                            style={stepperBtn}
+                            aria-label="Reducir cantidad"
+                          >
+                            −
+                          </button>
+                          <span
+                            style={{
+                              flex: 1,
+                              textAlign: 'center',
+                              fontSize: '28px',
+                              fontWeight: 900,
+                              color: colors.text,
+                            }}
+                          >
+                            {packageCount}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setPackageCount((c) => c + 1)}
+                            style={stepperBtn}
+                            aria-label="Aumentar cantidad"
+                          >
+                            +
+                          </button>
+                        </div>
+
+                        {/* Conversion preview */}
+                        <div
+                          style={{
+                            backgroundColor: colors.surface,
+                            border: `1px solid ${colors.border}`,
+                            borderRadius: radius.sm,
+                            padding: '10px 14px',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                          }}
+                        >
+                          <span style={{ fontSize: '13px', color: colors.textMuted }}>
+                            {packageCount} {product.packageUnit} × {product.packageSize}{' '}
+                            {product.unitLabel}
+                          </span>
+                          <span
+                            style={{ fontSize: '18px', fontWeight: 900, color: colors.primary }}
+                          >
+                            = {calcQty} {product.unitLabel}
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      /* Quantity — manual mode */
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <label style={labelStyle}>
+                          CANTIDAD
+                          {product.unitLabel && (
+                            <span
+                              style={{
+                                fontWeight: 400,
+                                textTransform: 'none',
+                                marginLeft: '6px',
+                                color: colors.textMuted,
+                              }}
+                            >
+                              ({product.unitLabel})
+                            </span>
+                          )}
+                        </label>
+                        <input
+                          type="number"
+                          min="0.01"
+                          step="any"
+                          value={quantity}
+                          onChange={(e) => setQuantity(e.target.value)}
+                          required
+                          placeholder="0"
+                          inputMode="decimal"
+                          autoFocus
+                          style={inputStyle}
+                        />
+                      </div>
+                    )}
+
+                    {/* Notes */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <label style={labelStyle}>
+                        NOTAS{' '}
+                        <span style={{ fontWeight: 400, textTransform: 'none' }}>(opcional)</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        placeholder="Ej: compra de emergencia"
+                        style={inputStyle}
+                      />
+                    </div>
+
+                    {error && (
+                      <div
+                        style={{
+                          backgroundColor: colors.dangerLight,
+                          color: colors.danger,
+                          padding: '10px 12px',
+                          borderRadius: radius.sm,
+                          fontSize: fontSize.sm,
+                          fontWeight: 500,
+                        }}
+                      >
+                        {error}
+                      </div>
+                    )}
+
+                    <button
+                      type="submit"
+                      disabled={saving || (!productHasPackage && !quantity)}
+                      style={{
+                        width: '100%',
+                        height: '48px',
+                        backgroundColor:
+                          saving || (!productHasPackage && !quantity)
+                            ? colors.border
+                            : colors.primary,
+                        color:
+                          saving || (!productHasPackage && !quantity) ? colors.textMuted : '#fff',
+                        border: 'none',
+                        borderRadius: radius.sm,
+                        fontSize: '14px',
+                        fontWeight: 700,
+                        letterSpacing: '0.06em',
+                        textTransform: 'uppercase',
+                        cursor:
+                          saving || (!productHasPackage && !quantity) ? 'not-allowed' : 'pointer',
+                        boxShadow:
+                          saving || (!productHasPackage && !quantity)
+                            ? 'none'
+                            : `0 4px 12px ${colors.primary}33`,
+                        transition: `background-color ${transition.fast}`,
+                      }}
+                    >
+                      {saving ? 'Guardando...' : 'Registrar Compra'}
+                    </button>
+                  </form>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        <div style={{ height: '1px', backgroundColor: colors.border }} />
 
         <PurchaseHistory items={history} loading={loadingHistory} />
       </div>
     </Layout>
   );
 }
+
+const labelStyle: React.CSSProperties = {
+  fontSize: '10px',
+  fontWeight: 700,
+  letterSpacing: '0.1em',
+  textTransform: 'uppercase',
+  color: colors.textMuted,
+};
+
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  height: '52px',
+  padding: '0 16px',
+  backgroundColor: colors.surface,
+  border: `1px solid ${colors.border}`,
+  borderRadius: radius.md,
+  fontSize: '16px',
+  color: colors.text,
+  fontWeight: 500,
+  outline: 'none',
+  boxSizing: 'border-box',
+};
+
+const stepperBtn: React.CSSProperties = {
+  width: '52px',
+  height: '52px',
+  borderRadius: radius.md,
+  border: `1px solid ${colors.border}`,
+  backgroundColor: colors.surface,
+  color: colors.text,
+  fontSize: '24px',
+  fontWeight: 300,
+  cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  flexShrink: 0,
+};

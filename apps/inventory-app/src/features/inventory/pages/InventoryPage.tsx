@@ -4,7 +4,7 @@ import { useAuth } from '../../../shared/contexts/AuthContext';
 import { Layout } from '../../../shared/components/Layout';
 import { CountCard } from '../components/CountCard';
 import { useInventoryToday } from '../hooks/useInventoryToday';
-import { colors, fontSize, radius, spacing } from '../../../shared/theme';
+import { colors, radius, fontSize } from '../../../shared/theme';
 
 export function InventoryPage() {
   const { user } = useAuth();
@@ -27,9 +27,9 @@ export function InventoryPage() {
   if (loading) {
     return (
       <Layout title="Inventario">
-        <p style={{ color: colors.textMuted, textAlign: 'center', paddingTop: '40px' }}>
-          Cargando productos...
-        </p>
+        <div style={{ paddingTop: '48px', textAlign: 'center' }}>
+          <p style={{ color: colors.textMuted, fontSize: fontSize.base }}>Cargando productos...</p>
+        </div>
       </Layout>
     );
   }
@@ -41,15 +41,16 @@ export function InventoryPage() {
           style={{
             backgroundColor: colors.dangerLight,
             borderRadius: radius.md,
-            padding: spacing.md,
+            padding: '20px',
             textAlign: 'center',
           }}
         >
-          <p style={{ color: colors.danger, margin: 0 }}>Error al cargar productos</p>
+          <p style={{ color: colors.danger, margin: '0 0 12px', fontWeight: 600 }}>
+            Error al cargar productos
+          </p>
           <button
             onClick={reload}
             style={{
-              marginTop: '12px',
               padding: '10px 20px',
               backgroundColor: colors.danger,
               color: '#fff',
@@ -57,6 +58,8 @@ export function InventoryPage() {
               borderRadius: radius.sm,
               cursor: 'pointer',
               minHeight: '44px',
+              fontWeight: 600,
+              fontSize: fontSize.base,
             }}
           >
             Reintentar
@@ -68,83 +71,181 @@ export function InventoryPage() {
 
   const total = items.length;
   const allDone = total > 0 && savedCount >= total;
+  const pending = total - savedCount;
+  const progressPct = total > 0 ? (savedCount / total) * 100 : 0;
 
   return (
     <Layout title="Inventario">
       <p
         style={{
-          fontSize: fontSize.sm,
+          fontSize: '11px',
+          fontWeight: 700,
           color: colors.textMuted,
-          marginBottom: spacing.md,
-          textTransform: 'capitalize',
+          letterSpacing: '0.06em',
+          textTransform: 'uppercase',
+          marginBottom: '16px',
         }}
       >
         {today}
       </p>
 
       {total === 0 ? (
-        <div style={{ textAlign: 'center', paddingTop: '48px', color: colors.textMuted }}>
-          <p style={{ fontSize: '48px', margin: '0 0 8px' }}>✅</p>
-          <p style={{ fontSize: fontSize.base, fontWeight: 500, color: colors.text }}>
+        <div style={{ textAlign: 'center', paddingTop: '64px' }}>
+          <div
+            style={{
+              width: '64px',
+              height: '64px',
+              borderRadius: radius.md,
+              backgroundColor: `${colors.success}18`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 16px',
+              color: colors.success,
+            }}
+          >
+            <svg
+              width="32"
+              height="32"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.75"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+              <polyline points="22 4 12 14.01 9 11.01" />
+            </svg>
+          </div>
+          <p
+            style={{
+              fontSize: fontSize.lg,
+              fontWeight: 700,
+              color: colors.text,
+              marginBottom: '6px',
+            }}
+          >
             No hay productos por contar hoy
           </p>
-          <p style={{ fontSize: fontSize.sm }}>Regresa mañana o revisa la configuración.</p>
+          <p style={{ fontSize: fontSize.base, color: colors.textMuted }}>
+            Regresa mañana o revisa la configuración.
+          </p>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {/* Barra de progreso */}
+          {/* Bento stats */}
           <div
             style={{
-              backgroundColor: colors.surface,
-              border: `1px solid ${colors.border}`,
-              borderRadius: radius.md,
-              padding: spacing.md,
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: '10px',
+              marginBottom: '8px',
             }}
           >
             <div
               style={{
+                backgroundColor: colors.surfaceLow,
+                borderRadius: radius.md,
+                padding: '16px',
+                borderLeft: `4px solid ${colors.primary}`,
+                minHeight: '100px',
                 display: 'flex',
+                flexDirection: 'column',
                 justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: '8px',
               }}
             >
-              <span style={{ fontSize: fontSize.sm, color: colors.textMuted }}>
-                {allDone ? '¡Inventario completo!' : 'Progreso'}
+              <span
+                style={{
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  color: colors.textMuted,
+                }}
+              >
+                Por completar
               </span>
               <span
                 style={{
-                  fontSize: fontSize.sm,
-                  fontWeight: 700,
-                  color: allDone ? colors.success : colors.primary,
+                  fontSize: '40px',
+                  fontWeight: 900,
+                  letterSpacing: '-0.04em',
+                  color: colors.text,
+                  lineHeight: 1,
                 }}
               >
-                {savedCount} / {total}
+                {String(pending).padStart(2, '0')}
               </span>
             </div>
             <div
               style={{
-                height: '6px',
-                backgroundColor: colors.bg,
-                borderRadius: '3px',
-                overflow: 'hidden',
+                backgroundColor: colors.surfaceLow,
+                borderRadius: radius.md,
+                padding: '16px',
+                minHeight: '100px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
               }}
             >
-              <div
+              <span
                 style={{
-                  height: '100%',
-                  width: `${(savedCount / total) * 100}%`,
-                  backgroundColor: allDone ? colors.success : colors.primary,
-                  borderRadius: '3px',
-                  transition: 'width 0.3s ease',
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  color: colors.textMuted,
                 }}
-              />
+              >
+                {allDone ? '¡Completo!' : 'Guardados'}
+              </span>
+              <span
+                style={{
+                  fontSize: '40px',
+                  fontWeight: 900,
+                  letterSpacing: '-0.04em',
+                  color: allDone ? colors.success : colors.primary,
+                  lineHeight: 1,
+                }}
+              >
+                {String(savedCount).padStart(2, '0')}
+              </span>
             </div>
           </div>
 
-          {/* Lista de productos */}
-          {items.map((item) => (
-            <CountCard key={item.productId} item={item} userId={user.id} onSaved={handleSaved} />
+          {/* Progress bar */}
+          <div
+            style={{
+              height: '4px',
+              backgroundColor: colors.surfaceHigh,
+              borderRadius: '2px',
+              overflow: 'hidden',
+              marginBottom: '4px',
+            }}
+          >
+            <div
+              style={{
+                height: '100%',
+                width: `${progressPct}%`,
+                backgroundColor: allDone ? colors.success : colors.primary,
+                borderRadius: '2px',
+                transition: 'width 0.4s ease',
+              }}
+            />
+          </div>
+
+          {/* Checklist */}
+          {items.map((item, index) => (
+            <CountCard
+              key={item.productId}
+              item={item}
+              userId={user.id}
+              index={index}
+              onSaved={handleSaved}
+              autoFocus={index === 0}
+            />
           ))}
         </div>
       )}

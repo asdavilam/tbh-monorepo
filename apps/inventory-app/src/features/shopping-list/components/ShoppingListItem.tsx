@@ -1,11 +1,11 @@
 import type { ShoppingListItemDto } from '@tbh/application';
-import { colors, fontSize, radius, spacing } from '../../../shared/theme';
+import { colors, fontSize, radius } from '../../../shared/theme';
 
 function getStockIndicator(currentStock: number) {
   if (currentStock <= 0) {
-    return { icon: '🔴', label: 'Sin stock', color: colors.danger, bg: colors.dangerLight };
+    return { color: colors.danger, bg: colors.dangerLight, label: 'Sin stock' };
   }
-  return { icon: '🟡', label: 'Bajo stock', color: colors.warning, bg: colors.warningLight };
+  return { color: colors.warning, bg: colors.warningLight, label: 'Bajo stock' };
 }
 
 interface Props {
@@ -20,78 +20,86 @@ export function ShoppingListItem({ item }: Props) {
       style={{
         backgroundColor: colors.surface,
         borderRadius: radius.md,
-        padding: spacing.md,
+        padding: '18px 20px',
         border: `1px solid ${colors.border}`,
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        gap: '16px',
       }}
     >
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          gap: spacing.sm,
-        }}
-      >
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <p
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p
+          style={{
+            margin: '0 0 8px',
+            fontWeight: 700,
+            fontSize: fontSize.md,
+            color: colors.text,
+            textTransform: 'uppercase',
+            letterSpacing: '-0.01em',
+          }}
+        >
+          {item.productName}
+        </p>
+        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+          <span
             style={{
-              margin: '0 0 8px',
+              fontSize: '11px',
+              fontWeight: 700,
+              letterSpacing: '0.04em',
+              backgroundColor: indicator.bg,
+              color: indicator.color,
+              padding: '3px 10px',
+              borderRadius: '999px',
+            }}
+          >
+            {indicator.label}: {item.currentStock} {item.unitLabel}
+          </span>
+          <span
+            style={{
+              fontSize: '11px',
               fontWeight: 600,
-              fontSize: fontSize.lg,
-              color: colors.text,
+              backgroundColor: colors.surfaceLow,
+              color: colors.textMuted,
+              padding: '3px 10px',
+              borderRadius: '999px',
             }}
           >
-            {item.productName}
-          </p>
-          <div style={{ display: 'flex', gap: spacing.sm, flexWrap: 'wrap' }}>
-            <span
-              style={{
-                fontSize: fontSize.sm,
-                backgroundColor: indicator.bg,
-                color: indicator.color,
-                padding: '3px 10px',
-                borderRadius: '20px',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px',
-                fontWeight: 500,
-              }}
-            >
-              {indicator.icon} {item.currentStock} {item.unitLabel}
-            </span>
-            <span
-              style={{
-                fontSize: fontSize.sm,
-                backgroundColor: colors.bg,
-                color: colors.textMuted,
-                padding: '3px 10px',
-                borderRadius: '20px',
-              }}
-            >
-              Mín: {item.minStock} {item.unitLabel}
-            </span>
-          </div>
+            Mín: {item.minStock} {item.unitLabel}
+          </span>
         </div>
+      </div>
 
-        <div style={{ textAlign: 'right', flexShrink: 0 }}>
-          <p style={{ margin: '0 0 2px', fontSize: fontSize.sm, color: colors.textMuted }}>
-            Comprar
-          </p>
-          <p
-            style={{
-              margin: 0,
-              fontSize: fontSize['2xl'],
-              fontWeight: 800,
-              color: colors.primary,
-              lineHeight: 1,
-            }}
-          >
-            {item.suggestedQuantity}
-          </p>
-          <p style={{ margin: 0, fontSize: fontSize.sm, color: colors.textMuted }}>
-            {item.unitLabel}
-          </p>
-        </div>
+      <div style={{ textAlign: 'right', flexShrink: 0 }}>
+        <p
+          style={{
+            margin: '0 0 2px',
+            fontSize: '10px',
+            fontWeight: 700,
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            color: colors.textMuted,
+          }}
+        >
+          Comprar
+        </p>
+        <p
+          style={{
+            margin: 0,
+            fontSize: '28px',
+            fontWeight: 900,
+            color: colors.primary,
+            letterSpacing: '-0.03em',
+            lineHeight: 1,
+          }}
+        >
+          {item.suggestedQuantity}
+        </p>
+        <p
+          style={{ margin: '2px 0 0', fontSize: '11px', color: colors.textMuted, fontWeight: 500 }}
+        >
+          {item.unitLabel}
+        </p>
       </div>
     </div>
   );

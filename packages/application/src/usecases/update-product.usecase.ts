@@ -13,6 +13,9 @@ function toDto(product: Product): ProductResponseDto {
     countDays: product.countDays,
     minStock: product.minStock,
     assignedUserId: product.assignedUserId,
+    packageUnit: product.packageUnit,
+    packageSize: product.packageSize,
+    barcode: product.barcode,
     createdAt: product.createdAt.toISOString(),
     updatedAt: product.updatedAt.toISOString(),
   };
@@ -43,6 +46,10 @@ export class UpdateProductUseCase {
       minStock: dto.minStock !== undefined ? dto.minStock : existing.minStock,
       assignedUserId:
         dto.assignedUserId !== undefined ? dto.assignedUserId : existing.assignedUserId,
+      packageUnit: dto.packageUnit !== undefined ? dto.packageUnit : existing.packageUnit,
+      packageSize: dto.packageSize !== undefined ? dto.packageSize : existing.packageSize,
+      barcode:
+        dto.barcode !== undefined ? (dto.barcode ? dto.barcode.trim() : null) : existing.barcode,
     });
 
     return toDto(updated);

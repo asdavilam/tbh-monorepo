@@ -22,31 +22,32 @@ export function ShoppingListPage() {
   const autoProductIds = autoItems.map((i) => i.productId);
   const manualProductIds = manualItems.map((i) => i.productId);
   const existingIds = [...autoProductIds, ...manualProductIds];
-
   const totalItems = autoItems.length + manualItems.length;
 
   if (loading) {
     return (
-      <Layout title="Lista de compras">
-        <p style={{ color: colors.textMuted, textAlign: 'center', paddingTop: '40px' }}>
-          Calculando lista...
-        </p>
+      <Layout title="Lista de Compras">
+        <div style={{ paddingTop: '48px', textAlign: 'center' }}>
+          <p style={{ color: colors.textMuted, fontSize: fontSize.base }}>Calculando lista...</p>
+        </div>
       </Layout>
     );
   }
 
   if (error) {
     return (
-      <Layout title="Lista de compras">
+      <Layout title="Lista de Compras">
         <div
           style={{
             backgroundColor: colors.dangerLight,
             borderRadius: radius.md,
-            padding: '16px',
+            padding: '20px',
             textAlign: 'center',
           }}
         >
-          <p style={{ color: colors.danger, margin: '0 0 12px' }}>Error al generar la lista</p>
+          <p style={{ color: colors.danger, margin: '0 0 12px', fontWeight: 600 }}>
+            Error al generar la lista
+          </p>
           <button
             onClick={reload}
             style={{
@@ -58,6 +59,7 @@ export function ShoppingListPage() {
               cursor: 'pointer',
               minHeight: '44px',
               fontSize: fontSize.base,
+              fontWeight: 600,
             }}
           >
             Reintentar
@@ -68,85 +70,157 @@ export function ShoppingListPage() {
   }
 
   return (
-    <Layout title="Lista de compras">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        {totalItems === 0 ? (
-          <div style={{ textAlign: 'center', paddingTop: '48px', color: colors.textMuted }}>
-            <p style={{ fontSize: '48px', margin: '0 0 8px' }}>✅</p>
-            <p style={{ fontSize: fontSize.base, fontWeight: 500, color: colors.text }}>
-              Todo está completo
-            </p>
-            <p style={{ fontSize: fontSize.sm }}>No hay productos por debajo del stock mínimo.</p>
-          </div>
-        ) : (
-          <p style={{ fontSize: fontSize.sm, color: colors.textMuted, margin: 0 }}>
-            {totalItems} {totalItems === 1 ? 'producto' : 'productos'} en la lista
+    <Layout title="Lista de Compras">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        {/* Header badge */}
+        {totalItems > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+            <span
+              style={{
+                fontSize: '11px',
+                fontWeight: 700,
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+                color: colors.textMuted,
+              }}
+            >
+              {totalItems} {totalItems === 1 ? 'producto' : 'productos'}
+            </span>
             {autoItems.length > 0 && (
-              <span style={{ color: colors.danger }}> · {autoItems.length} bajo stock</span>
+              <span
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  backgroundColor: colors.dangerLight,
+                  color: colors.danger,
+                  padding: '2px 8px',
+                  borderRadius: '999px',
+                }}
+              >
+                {autoItems.length} bajo stock
+              </span>
             )}
-          </p>
+          </div>
         )}
 
-        {/* Lista auto-generada */}
+        {totalItems === 0 && (
+          <div style={{ textAlign: 'center', paddingTop: '64px' }}>
+            <div
+              style={{
+                width: '64px',
+                height: '64px',
+                borderRadius: radius.md,
+                backgroundColor: `${colors.success}18`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 16px',
+                color: colors.success,
+              }}
+            >
+              <svg
+                width="32"
+                height="32"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.75"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                <polyline points="22 4 12 14.01 9 11.01" />
+              </svg>
+            </div>
+            <p
+              style={{
+                fontSize: fontSize.lg,
+                fontWeight: 700,
+                color: colors.text,
+                marginBottom: '6px',
+              }}
+            >
+              Todo está completo
+            </p>
+            <p style={{ fontSize: fontSize.base, color: colors.textMuted }}>
+              No hay productos por debajo del stock mínimo.
+            </p>
+          </div>
+        )}
+
+        {/* Auto-generated items */}
         {autoItems.map((item) => (
           <ShoppingListItem key={item.productId} item={item} />
         ))}
 
-        {/* Items manuales */}
+        {/* Manual items */}
         {manualItems.map((item, index) => (
           <div
             key={`manual-${index}`}
             style={{
               backgroundColor: colors.surface,
               borderRadius: radius.md,
-              padding: spacing.md,
+              padding: '18px 20px',
               border: `1px solid ${colors.border}`,
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              gap: spacing.sm,
+              gap: '12px',
             }}
           >
             <div style={{ flex: 1, minWidth: 0 }}>
               <p
                 style={{
-                  margin: '0 0 4px',
-                  fontWeight: 600,
-                  fontSize: fontSize.lg,
+                  margin: '0 0 6px',
+                  fontWeight: 700,
+                  fontSize: fontSize.md,
                   color: colors.text,
+                  textTransform: 'uppercase',
+                  letterSpacing: '-0.01em',
                 }}
               >
                 {item.productName}
               </p>
               <span
                 style={{
-                  fontSize: fontSize.sm,
-                  backgroundColor: colors.primaryLight,
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  backgroundColor: colors.surfaceLow,
                   color: colors.primary,
                   padding: '3px 10px',
-                  borderRadius: '20px',
-                  fontWeight: 500,
+                  borderRadius: '999px',
                 }}
               >
-                🟢 Manual
+                Manual
               </span>
             </div>
             <div style={{ textAlign: 'right', flexShrink: 0 }}>
-              <p style={{ margin: '0 0 2px', fontSize: fontSize.sm, color: colors.textMuted }}>
+              <p
+                style={{
+                  margin: '0 0 2px',
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  color: colors.textMuted,
+                }}
+              >
                 Comprar
               </p>
               <p
                 style={{
                   margin: 0,
-                  fontSize: fontSize['2xl'],
-                  fontWeight: 800,
+                  fontSize: '28px',
+                  fontWeight: 900,
                   color: colors.primary,
+                  letterSpacing: '-0.03em',
                   lineHeight: 1,
                 }}
               >
                 {item.quantity}
               </p>
-              <p style={{ margin: 0, fontSize: fontSize.sm, color: colors.textMuted }}>
+              <p style={{ margin: '2px 0 0', fontSize: '11px', color: colors.textMuted }}>
                 {item.unitLabel}
               </p>
             </div>
@@ -159,25 +233,41 @@ export function ShoppingListPage() {
                 border: 'none',
                 color: colors.textLight,
                 cursor: 'pointer',
-                fontSize: '18px',
                 minHeight: '44px',
                 minWidth: '44px',
                 flexShrink: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: radius.sm,
               }}
             >
-              ✕
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
             </button>
           </div>
         ))}
 
-        {/* Formulario para agregar manualmente */}
+        {/* Add manual item form */}
         <ManualItemForm
           allProducts={allProducts}
           existingProductIds={existingIds}
           onAdd={addManualItem}
         />
 
-        {/* Acciones */}
+        {/* Actions */}
         <div style={{ display: 'flex', gap: spacing.sm, marginTop: '4px' }}>
           <button
             onClick={reload}
@@ -186,9 +276,11 @@ export function ShoppingListPage() {
               padding: '12px',
               backgroundColor: 'transparent',
               color: colors.primary,
-              border: `1px solid ${colors.primary}`,
+              border: `2px solid ${colors.primary}`,
               borderRadius: radius.sm,
-              fontSize: fontSize.base,
+              fontSize: '13px',
+              fontWeight: 700,
+              letterSpacing: '0.04em',
               cursor: 'pointer',
               minHeight: '44px',
             }}
@@ -204,7 +296,8 @@ export function ShoppingListPage() {
                 color: colors.textMuted,
                 border: `1px solid ${colors.border}`,
                 borderRadius: radius.sm,
-                fontSize: fontSize.base,
+                fontSize: '13px',
+                fontWeight: 600,
                 cursor: 'pointer',
                 minHeight: '44px',
                 whiteSpace: 'nowrap',

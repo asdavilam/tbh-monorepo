@@ -23,34 +23,67 @@ export function Layout({ children, title }: LayoutProps) {
       {/* Header */}
       <header
         style={{
-          backgroundColor: colors.surface,
-          borderBottom: `1px solid ${colors.border}`,
-          padding: '0 16px',
-          height: '56px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          position: 'sticky',
+          position: 'fixed',
           top: 0,
-          zIndex: 10,
+          left: 0,
+          right: 0,
+          zIndex: 40,
+          backgroundColor: 'rgba(253, 252, 251, 0.85)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          borderBottom: `1px solid ${colors.border}`,
         }}
       >
-        <span style={{ fontWeight: 700, fontSize: '18px', color: colors.text }}>
-          {title ?? 'TBH Inventario'}
-        </span>
-        {user && <span style={{ fontSize: '13px', color: colors.textMuted }}>{user.name}</span>}
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '0 20px',
+            height: '56px',
+          }}
+        >
+          <span
+            style={{
+              fontWeight: 900,
+              fontSize: '16px',
+              color: colors.primary,
+              letterSpacing: '-0.02em',
+              textTransform: 'uppercase',
+            }}
+          >
+            {title ?? 'TRAILER BURGER HALL'}
+          </span>
+          {user && (
+            <span
+              style={{
+                fontSize: '11px',
+                fontWeight: 700,
+                color: colors.primary,
+                backgroundColor: colors.surfaceLow,
+                padding: '4px 10px',
+                borderRadius: '999px',
+                letterSpacing: '0.04em',
+                textTransform: 'uppercase',
+              }}
+            >
+              {user.name.split(' ')[0]}
+            </span>
+          )}
+        </div>
       </header>
 
       {/* Main content */}
       <main
         style={{
           flex: 1,
-          padding: '16px',
-          paddingBottom: '80px', // espacio para BottomNav
+          paddingTop: '72px',
+          paddingBottom: '96px',
           maxWidth: '640px',
           width: '100%',
           margin: '0 auto',
           boxSizing: 'border-box',
+          padding: '72px 16px 96px',
         }}
       >
         {children}

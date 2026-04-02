@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "vite",
+    "dev:full": "concurrently -n vite,tsc -c cyan,yellow \"vite\" \"tsc --noEmit --watch --preserveWatchOutput\"",
     "build": "tsc && vite build",
     "lint": "eslint src",
     "preview": "vite preview",
@@ -16,6 +17,8 @@
     "@tbh/infrastructure": "workspace:*",
     "@tbh/types": "workspace:*",
     "@tbh/ui": "workspace:*",
+    "@zxing/browser": "^0.1.5",
+    "@zxing/library": "^0.21.3",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
     "react-router-dom": "^6.22.0"
@@ -28,6 +31,7 @@
     "@vitejs/plugin-react": "^4.3.0",
     "eslint": "^9.0.0",
     "typescript": "^5.5.0",
+    "concurrently": "^9.0.0",
     "typescript-eslint": "^8.0.0",
     "vite": "^5.4.0"
   }

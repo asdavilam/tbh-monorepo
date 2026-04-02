@@ -61,6 +61,8 @@ export class GetInventoryForTodayUseCase {
           unitType: product.unitType,
           unitLabel: product.unitLabel,
           initialStock,
+          packageUnit: product.packageUnit,
+          packageSize: product.packageSize,
         };
       })
     );

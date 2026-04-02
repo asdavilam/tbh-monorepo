@@ -1,7 +1,27 @@
 import { useState, type FormEvent } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../shared/contexts/AuthContext';
-import { colors, fontSize, radius, spacing } from '../../../shared/theme';
+import { colors, radius } from '../../../shared/theme';
+
+function BurgerIcon() {
+  return (
+    <svg
+      width="32"
+      height="32"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M3 11h18M3 8a9 9 0 0 1 18 0" />
+      <rect x="3" y="11" width="18" height="2" rx="1" />
+      <path d="M3 13v1a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-1" />
+    </svg>
+  );
+}
 
 export function LoginPage() {
   const { signIn } = useAuth();
@@ -31,141 +51,236 @@ export function LoginPage() {
         minHeight: '100vh',
         backgroundColor: colors.bg,
         display: 'flex',
+        flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: spacing.md,
+        padding: '24px 20px',
       }}
     >
       <div
         style={{
-          backgroundColor: colors.surface,
-          borderRadius: radius.lg,
-          padding: '32px 24px',
           width: '100%',
           maxWidth: '400px',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
         }}
       >
-        <h1
+        {/* Brand */}
+        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '64px',
+              height: '64px',
+              backgroundColor: colors.primary,
+              borderRadius: radius.lg,
+              marginBottom: '16px',
+              color: '#fff',
+              boxShadow: `0 8px 24px ${colors.primary}33`,
+            }}
+          >
+            <BurgerIcon />
+          </div>
+          <h1
+            style={{
+              fontSize: '22px',
+              fontWeight: 900,
+              color: colors.primary,
+              letterSpacing: '-0.02em',
+              textTransform: 'uppercase',
+              marginBottom: '4px',
+            }}
+          >
+            Trailer Burger Hall
+          </h1>
+          <p style={{ fontSize: '13px', color: colors.textMuted, fontWeight: 500 }}>
+            Sistema de Inventario
+          </p>
+        </div>
+
+        {/* Card */}
+        <div
           style={{
-            fontSize: fontSize['2xl'],
-            fontWeight: 800,
-            color: colors.text,
-            marginBottom: '4px',
+            width: '100%',
+            backgroundColor: colors.surface,
+            borderRadius: radius.lg,
+            padding: '32px 28px',
+            boxShadow: '0 4px 24px rgba(80, 60, 40, 0.08)',
+            border: `1px solid ${colors.border}`,
           }}
         >
-          TBH
-        </h1>
-        <p style={{ fontSize: fontSize.base, color: colors.textMuted, marginBottom: '32px' }}>
-          Sistema de inventario
-        </p>
-
-        <form
-          onSubmit={handleSubmit}
-          style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}
-        >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <label
-              htmlFor="email"
-              style={{ fontSize: fontSize.base, fontWeight: 500, color: colors.text }}
-            >
-              Correo electrónico
-            </label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              autoComplete="email"
-              placeholder="usuario@ejemplo.com"
-              style={{
-                padding: '12px',
-                border: `1px solid ${colors.border}`,
-                borderRadius: radius.sm,
-                fontSize: '16px', // 16px para evitar zoom en iOS
-                outline: 'none',
-                width: '100%',
-                boxSizing: 'border-box',
-              }}
-            />
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <label
-              htmlFor="password"
-              style={{ fontSize: fontSize.base, fontWeight: 500, color: colors.text }}
-            >
-              Contraseña
-            </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-              placeholder="••••••••"
-              style={{
-                padding: '12px',
-                border: `1px solid ${colors.border}`,
-                borderRadius: radius.sm,
-                fontSize: '16px',
-                outline: 'none',
-                width: '100%',
-                boxSizing: 'border-box',
-              }}
-            />
-          </div>
-
           {error && (
-            <p
+            <div
               style={{
-                fontSize: fontSize.sm,
-                color: colors.danger,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
                 backgroundColor: colors.dangerLight,
-                padding: '10px 12px',
-                borderRadius: radius.sm,
-                margin: 0,
+                color: colors.danger,
+                padding: '12px 14px',
+                borderRadius: radius.md,
+                fontSize: '13px',
+                fontWeight: 500,
+                marginBottom: '20px',
               }}
             >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
               {error}
-            </p>
+            </div>
           )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              backgroundColor: loading ? colors.textLight : colors.primary,
-              color: '#fff',
-              border: 'none',
-              borderRadius: radius.sm,
-              padding: '14px',
-              fontSize: fontSize.md,
-              fontWeight: 600,
-              cursor: loading ? 'not-allowed' : 'pointer',
-              minHeight: '44px',
-              marginTop: '8px',
-            }}
+          <form
+            onSubmit={handleSubmit}
+            style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}
           >
-            {loading ? 'Entrando...' : 'Entrar'}
-          </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label
+                htmlFor="email"
+                style={{
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  color: colors.textMuted,
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                }}
+              >
+                Correo Electrónico
+              </label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoFocus
+                autoComplete="email"
+                placeholder="manager@trailerburger.com"
+                style={{
+                  width: '100%',
+                  height: '52px',
+                  padding: '0 16px',
+                  backgroundColor: colors.surfaceLow,
+                  border: '2px solid transparent',
+                  borderRadius: radius.md,
+                  fontSize: '16px',
+                  color: colors.text,
+                  fontWeight: 500,
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+              />
+            </div>
 
-          <p
-            style={{
-              textAlign: 'center',
-              fontSize: fontSize.base,
-              color: colors.textMuted,
-              margin: 0,
-            }}
-          >
-            ¿No tienes cuenta?{' '}
-            <Link to="/registro" style={{ color: colors.primary, fontWeight: 500 }}>
-              Regístrate
-            </Link>
-          </p>
-        </form>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label
+                htmlFor="password"
+                style={{
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  color: colors.textMuted,
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                }}
+              >
+                Contraseña
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                autoComplete="current-password"
+                placeholder="••••••••"
+                style={{
+                  width: '100%',
+                  height: '52px',
+                  padding: '0 16px',
+                  backgroundColor: colors.surfaceLow,
+                  border: '2px solid transparent',
+                  borderRadius: radius.md,
+                  fontSize: '16px',
+                  color: colors.text,
+                  fontWeight: 500,
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                width: '100%',
+                height: '52px',
+                backgroundColor: loading ? colors.textLight : colors.primary,
+                color: '#fff',
+                border: 'none',
+                borderRadius: radius.md,
+                fontSize: '15px',
+                fontWeight: 700,
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                boxShadow: loading ? 'none' : `0 4px 16px ${colors.primary}33`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+              }}
+            >
+              {loading ? 'Entrando...' : 'Entrar al Sistema'}
+              {!loading && (
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                  <polyline points="12 5 19 12 12 19" />
+                </svg>
+              )}
+            </button>
+          </form>
+        </div>
+
+        {/* Footer */}
+        <p
+          style={{
+            marginTop: '32px',
+            fontSize: '10px',
+            fontWeight: 700,
+            letterSpacing: '0.15em',
+            color: colors.textLight,
+            textTransform: 'uppercase',
+          }}
+        >
+          Inventory System v1.0
+        </p>
       </div>
     </div>
   );

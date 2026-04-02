@@ -24,3 +24,6 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+
+# Claude Code local settings (contains secrets)
+.claude/settings.local.json

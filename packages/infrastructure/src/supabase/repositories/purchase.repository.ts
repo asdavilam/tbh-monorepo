@@ -1,14 +1,19 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Purchase, IPurchaseRepository } from '@tbh/domain';
 import { toPurchaseEntity, toPurchaseRow } from '../mappers/purchase.mapper';
+import { RepositoryError } from '../../errors';
 
 export class SupabasePurchaseRepository implements IPurchaseRepository {
   constructor(private readonly client: SupabaseClient) {}
 
   async findById(id: string): Promise<Purchase | null> {
-    const { data, error } = await this.client.from('purchases').select('*').eq('id', id).single();
+    const { data, error } = await this.client
+      .from('purchases')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
 
-    if (error) throw new Error(`Error al buscar compra: ${error.message}`);
+    if (error) throw new RepositoryError(`Error al buscar compra: ${error.message}`);
     if (!data) return null;
     return toPurchaseEntity(data);
   }
@@ -20,7 +25,7 @@ export class SupabasePurchaseRepository implements IPurchaseRepository {
       .eq('product_id', productId)
       .order('purchased_at', { ascending: false });
 
-    if (error) throw new Error(`Error al buscar compras del producto: ${error.message}`);
+    if (error) throw new RepositoryError(`Error al buscar compras del producto: ${error.message}`);
     return (data ?? []).map(toPurchaseEntity);
   }
 
@@ -33,7 +38,7 @@ export class SupabasePurchaseRepository implements IPurchaseRepository {
       .lte('purchased_at', to.toISOString())
       .order('purchased_at', { ascending: false });
 
-    if (error) throw new Error(`Error al buscar compras por rango: ${error.message}`);
+    if (error) throw new RepositoryError(`Error al buscar compras por rango: ${error.message}`);
     return (data ?? []).map(toPurchaseEntity);
   }
 
@@ -45,7 +50,7 @@ export class SupabasePurchaseRepository implements IPurchaseRepository {
       .lte('purchased_at', to.toISOString())
       .order('purchased_at', { ascending: false });
 
-    if (error) throw new Error(`Error al buscar compras: ${error.message}`);
+    if (error) throw new RepositoryError(`Error al buscar compras: ${error.message}`);
     return (data ?? []).map(toPurchaseEntity);
   }
 
@@ -56,7 +61,7 @@ export class SupabasePurchaseRepository implements IPurchaseRepository {
       .select()
       .single();
 
-    if (error) throw new Error(`Error al guardar compra: ${error.message}`);
+    if (error) throw new RepositoryError(`Error al guardar compra: ${error.message}`);
     return toPurchaseEntity(data);
   }
 }

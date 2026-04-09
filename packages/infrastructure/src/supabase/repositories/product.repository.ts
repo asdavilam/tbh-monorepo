@@ -1,14 +1,19 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Product, IProductRepository } from '@tbh/domain';
 import { toProductEntity, toProductRow } from '../mappers/product.mapper';
+import { RepositoryError } from '../../errors';
 
 export class SupabaseProductRepository implements IProductRepository {
   constructor(private readonly client: SupabaseClient) {}
 
   async findById(id: string): Promise<Product | null> {
-    const { data, error } = await this.client.from('products').select('*').eq('id', id).single();
+    const { data, error } = await this.client
+      .from('products')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
 
-    if (error) throw new Error(`Error al buscar producto: ${error.message}`);
+    if (error) throw new RepositoryError(`Error al buscar producto: ${error.message}`);
     if (!data) return null;
     return toProductEntity(data);
   }
@@ -16,7 +21,7 @@ export class SupabaseProductRepository implements IProductRepository {
   async findAll(): Promise<Product[]> {
     const { data, error } = await this.client.from('products').select('*').order('name');
 
-    if (error) throw new Error(`Error al listar productos: ${error.message}`);
+    if (error) throw new RepositoryError(`Error al listar productos: ${error.message}`);
     return (data ?? []).map(toProductEntity);
   }
 
@@ -27,7 +32,7 @@ export class SupabaseProductRepository implements IProductRepository {
       .or(`assigned_user_id.eq.${userId},assigned_user_id.is.null`)
       .order('name');
 
-    if (error) throw new Error(`Error al buscar productos del usuario: ${error.message}`);
+    if (error) throw new RepositoryError(`Error al buscar productos del usuario: ${error.message}`);
     return (data ?? []).map(toProductEntity);
   }
 
@@ -38,7 +43,7 @@ export class SupabaseProductRepository implements IProductRepository {
       .select()
       .single();
 
-    if (error) throw new Error(`Error al crear producto: ${error.message}`);
+    if (error) throw new RepositoryError(`Error al crear producto: ${error.message}`);
     return toProductEntity(data);
   }
 
@@ -51,13 +56,22 @@ export class SupabaseProductRepository implements IProductRepository {
       .select()
       .single();
 
-    if (error) throw new Error(`Error al actualizar producto: ${error.message}`);
+    if (error) throw new RepositoryError(`Error al actualizar producto: ${error.message}`);
     return toProductEntity(data);
   }
 
   async delete(id: string): Promise<void> {
     const { error } = await this.client.from('products').delete().eq('id', id);
 
-    if (error) throw new Error(`Error al eliminar producto: ${error.message}`);
+    if (error) throw new RepositoryError(`Error al eliminar producto: ${error.message}`);
+  }
+
+  async bulkUpdateAssignedUser(productIds: string[], userId: string | null): Promise<void> {
+    const { error } = await this.client
+      .from('products')
+      .update({ assigned_user_id: userId })
+      .in('id', productIds);
+
+    if (error) throw new RepositoryError(`Error al asignar productos en masa: ${error.message}`);
   }
 }

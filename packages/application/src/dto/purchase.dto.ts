@@ -13,3 +13,16 @@ export interface PurchaseResponseDto {
   purchasedAt: string;
   notes: string | null;
 }
+
+export interface GetRecentPurchasesDto {
+  daysBack?: number;
+}
+
+export interface PurchaseHistoryItemDto {
+  id: string;
+  productName: string;
+  unitLabel: string;
+  quantity: number;
+  purchasedAt: string;
+  notes: string | null;
+}

@@ -8,6 +8,14 @@ export {
   SupabaseProductRepository,
   SupabaseInventoryRecordRepository,
   SupabasePurchaseRepository,
+  SupabaseUserRepository,
 } from './supabase/repositories';
 
 export * from './supabase/mappers';
+
+export { RepositoryError } from './errors';
+
+export { SupabaseAuthClient } from './auth';
+export type { AuthSession } from './auth';
+
+export type { SupabaseEnvironmentConfig } from './config';

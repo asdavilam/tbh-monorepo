@@ -1,4 +1,4 @@
-import type { ProductType, UnitType, CountFrequency, DayOfWeek } from '@tbh/domain';
+import type { ProductType, UnitType, CountFrequency, DayOfWeek, UserRole } from '@tbh/domain';
 
 export interface CreateProductDto {
   name: string;
@@ -9,6 +9,10 @@ export interface CreateProductDto {
   countDays: DayOfWeek[];
   minStock: number | null;
   assignedUserId: string | null;
+  packageUnit: string | null;
+  packageSize: number | null;
+  barcode: string | null;
+  parentProductId?: string | null;
 }
 
 export interface UpdateProductDto {
@@ -21,6 +25,10 @@ export interface UpdateProductDto {
   countDays?: DayOfWeek[];
   minStock?: number | null;
   assignedUserId?: string | null;
+  packageUnit?: string | null;
+  packageSize?: number | null;
+  barcode?: string | null;
+  parentProductId?: string | null;
 }
 
 export interface ProductResponseDto {
@@ -33,6 +41,26 @@ export interface ProductResponseDto {
   countDays: DayOfWeek[];
   minStock: number | null;
   assignedUserId: string | null;
+  packageUnit: string | null;
+  packageSize: number | null;
+  barcode: string | null;
+  parentProductId: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface GetProductsByUserDto {
+  userId: string;
+  userRole: UserRole;
+  /** Fecha para filtrar por frecuencia de conteo */
+  date: Date;
+}
+
+export interface ShoppingListItemDto {
+  productId: string;
+  productName: string;
+  unitLabel: string;
+  currentStock: number;
+  minStock: number;
+  suggestedQuantity: number;
 }

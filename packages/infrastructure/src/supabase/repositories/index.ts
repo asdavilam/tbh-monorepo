@@ -4,3 +4,4 @@
 export { SupabaseProductRepository } from './product.repository';
 export { SupabaseInventoryRecordRepository } from './inventory-record.repository';
 export { SupabasePurchaseRepository } from './purchase.repository';
+export { SupabaseUserRepository } from './user.repository';

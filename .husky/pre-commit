@@ -1,6 +1,3 @@
-#!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
-
 # Security check: Prevent committing secrets
 echo "🔍 Checking for secrets..."
 if git diff --cached --name-only | xargs grep -E "AIza[0-9A-Za-z-_]{35}|xox[bpgr]-[0-9]{12}-[0-9]{12}-[0-9]{12}-[a-z0-9]{32}|SG\.[0-9A-Za-z-_]{22}\.[0-9A-Za-z-_]{43}|sk_live_[0-9a-zA-Z]{24}|sq0atp-[0-9A-Za-z-_]{22}|sq0csp-[0-9A-Za-z-_]{42}|access_token\$production\$[0-9a-z]{16}\$[0-9a-f]{32}|supabase_key|SUPABASE_KEY|SERVICE_ROLE_KEY" /dev/null 2>/dev/null; then

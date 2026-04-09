@@ -20,6 +20,10 @@ export function canEditInventoryRecords(role: UserRole): boolean {
   return role === 'admin';
 }
 
+export function canManageStock(role: UserRole): boolean {
+  return role === 'admin' || role === 'encargado';
+}
+
 export function isAdmin(role: UserRole): boolean {
   return role === 'admin';
 }

@@ -1,1 +1,1 @@
-// Orchestration services will be defined in Phase 1
+export type { IAuthService, AuthSession } from './auth.service';

@@ -2,6 +2,7 @@
   "name": "@tbh/inventory-app",
   "version": "0.0.1",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "vite",
     "dev:full": "concurrently -n vite,tsc -c cyan,yellow \"vite\" \"tsc --noEmit --watch --preserveWatchOutput\"",

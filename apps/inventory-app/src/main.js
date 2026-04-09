@@ -7,6 +7,7 @@ import { ErrorBoundary } from './shared/components/ErrorBoundary';
 import { supabaseConfigured } from './shared/supabase';
 import { colors, fontSize, radius } from './shared/theme';
 import './index.css';
+
 function ConfigError() {
   return _jsx('div', {
     style: {

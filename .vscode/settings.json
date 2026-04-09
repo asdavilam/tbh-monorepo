@@ -1,0 +1,8 @@
+{
+  "eslint.validate": ["javascript", "javascriptreact", "typescript", "typescriptreact"],
+  "eslint.workingDirectories": [
+    { "directory": "apps/inventory-app", "changeProcessCWD": true },
+    { "directory": "apps/web-public", "changeProcessCWD": true }
+  ],
+  "eslint.useFlatConfig": true
+}

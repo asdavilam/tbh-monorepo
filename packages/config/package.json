@@ -2,6 +2,7 @@
   "name": "@tbh/config",
   "version": "0.0.1",
   "private": true,
+  "type": "module",
   "files": [
     "eslint.config.js",
     "tsconfig.base.json",

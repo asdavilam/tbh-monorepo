@@ -16,6 +16,7 @@ function toDto(product: Product): ProductResponseDto {
     packageUnit: product.packageUnit,
     packageSize: product.packageSize,
     barcode: product.barcode,
+    parentProductId: product.parentProductId,
     createdAt: product.createdAt.toISOString(),
     updatedAt: product.updatedAt.toISOString(),
   };
@@ -34,6 +35,14 @@ export class CreateProductUseCase {
 
     if (!dto.name.trim()) throw new Error('El nombre del producto es obligatorio');
 
+    // Validate parent exists if provided
+    if (dto.parentProductId) {
+      const parent = await this.productRepo.findById(dto.parentProductId);
+      if (!parent) throw new Error('Producto padre no encontrado');
+      if (parent.parentProductId)
+        throw new Error('No se pueden anidar variantes en más de un nivel');
+    }
+
     const product = await this.productRepo.save({
       name: dto.name.trim(),
       type: dto.type,
@@ -46,6 +55,7 @@ export class CreateProductUseCase {
       packageUnit: dto.packageUnit,
       packageSize: dto.packageSize,
       barcode: dto.barcode ? dto.barcode.trim() : null,
+      parentProductId: dto.parentProductId ?? null,
     });
 
     return toDto(product);

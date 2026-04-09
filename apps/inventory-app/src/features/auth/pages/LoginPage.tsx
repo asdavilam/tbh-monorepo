@@ -3,26 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../shared/contexts/AuthContext';
 import { colors, radius } from '../../../shared/theme';
 
-function BurgerIcon() {
-  return (
-    <svg
-      width="32"
-      height="32"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M3 11h18M3 8a9 9 0 0 1 18 0" />
-      <rect x="3" y="11" width="18" height="2" rx="1" />
-      <path d="M3 13v1a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-1" />
-    </svg>
-  );
-}
-
 export function LoginPage() {
   const { signIn } = useAuth();
   const navigate = useNavigate();
@@ -73,16 +53,20 @@ export function LoginPage() {
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: '64px',
-              height: '64px',
+              width: '140px',
+              height: '140px',
               backgroundColor: colors.primary,
               borderRadius: radius.lg,
               marginBottom: '16px',
-              color: '#fff',
               boxShadow: `0 8px 24px ${colors.primary}33`,
+              overflow: 'hidden',
             }}
           >
-            <BurgerIcon />
+            <img
+              src="/isologo.png"
+              alt="Trailer Burger Hall"
+              style={{ width: '72px', height: '72px', objectFit: 'contain' }}
+            />
           </div>
           <h1
             style={{

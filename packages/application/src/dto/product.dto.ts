@@ -12,6 +12,7 @@ export interface CreateProductDto {
   packageUnit: string | null;
   packageSize: number | null;
   barcode: string | null;
+  parentProductId?: string | null;
 }
 
 export interface UpdateProductDto {
@@ -27,6 +28,7 @@ export interface UpdateProductDto {
   packageUnit?: string | null;
   packageSize?: number | null;
   barcode?: string | null;
+  parentProductId?: string | null;
 }
 
 export interface ProductResponseDto {
@@ -42,6 +44,7 @@ export interface ProductResponseDto {
   packageUnit: string | null;
   packageSize: number | null;
   barcode: string | null;
+  parentProductId: string | null;
   createdAt: string;
   updatedAt: string;
 }

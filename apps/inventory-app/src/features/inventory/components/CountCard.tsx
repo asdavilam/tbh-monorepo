@@ -39,9 +39,52 @@ function humanizeError(err: unknown): string {
   return 'No se pudo guardar. Intenta de nuevo.';
 }
 
+function getDraftKey(productId: string): string {
+  const today = new Date().toISOString().slice(0, 10);
+  return `tbh:draft:count:${productId}:${today}`;
+}
+
+interface CountDraft {
+  finalCount: string;
+  qualitativeValue: QualitativeValue | null;
+}
+
+function loadDraft(productId: string): CountDraft | null {
+  try {
+    const raw = localStorage.getItem(getDraftKey(productId));
+    return raw ? (JSON.parse(raw) as CountDraft) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveDraft(productId: string, draft: CountDraft) {
+  try {
+    if (draft.finalCount || draft.qualitativeValue) {
+      localStorage.setItem(getDraftKey(productId), JSON.stringify(draft));
+    } else {
+      localStorage.removeItem(getDraftKey(productId));
+    }
+  } catch {
+    // localStorage no disponible, continuar sin persistencia
+  }
+}
+
+function clearDraft(productId: string) {
+  try {
+    localStorage.removeItem(getDraftKey(productId));
+  } catch {
+    // ignore
+  }
+}
+
 export function CountCard({ item, userId, index, onSaved, autoFocus = false }: CountCardProps) {
-  const [finalCount, setFinalCount] = useState('');
-  const [qualitativeValue, setQualitativeValue] = useState<QualitativeValue | null>(null);
+  const draft = loadDraft(item.productId);
+
+  const [finalCount, setFinalCount] = useState(draft?.finalCount ?? '');
+  const [qualitativeValue, setQualitativeValue] = useState<QualitativeValue | null>(
+    draft?.qualitativeValue ?? null
+  );
   const [savedRecord, setSavedRecord] = useState<InventoryRecordResponseDto | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -55,6 +98,11 @@ export function CountCard({ item, userId, index, onSaved, autoFocus = false }: C
       inputRef.current.focus();
     }
   }, [autoFocus, isQualitative]);
+
+  // Persistir borrador al cambiar valores
+  useEffect(() => {
+    saveDraft(item.productId, { finalCount, qualitativeValue });
+  }, [finalCount, qualitativeValue, item.productId]);
 
   const liveDifference: number | null =
     !isQualitative && item.initialStock !== null && finalCount !== ''
@@ -73,6 +121,7 @@ export function CountCard({ item, userId, index, onSaved, autoFocus = false }: C
         finalCount: isQualitative ? null : Number(finalCount),
         qualitativeValue: isQualitative ? qualitativeValue : null,
       });
+      clearDraft(item.productId);
       onSaved(record);
       setSavedRecord(record);
     } catch (err) {
@@ -146,9 +195,7 @@ export function CountCard({ item, userId, index, onSaved, autoFocus = false }: C
               {item.name}
             </p>
             <p style={{ margin: '2px 0 0', fontSize: fontSize.sm, color: colors.textMuted }}>
-              {!isQualitative && savedRecord.initialStock !== null
-                ? `Inicial: ${savedRecord.initialStock} ${item.unitLabel}`
-                : ''}
+              {item.unitLabel}
             </p>
           </div>
         </div>
@@ -245,23 +292,6 @@ export function CountCard({ item, userId, index, onSaved, autoFocus = false }: C
           >
             {item.name}
           </p>
-          {!isQualitative && (
-            <p
-              style={{
-                margin: '2px 0 0',
-                fontSize: '10px',
-                fontWeight: 700,
-                color: colors.textMuted,
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-              }}
-            >
-              INICIAL:{' '}
-              {item.initialStock !== null
-                ? `${item.initialStock} ${item.unitLabel}`
-                : '— sin historial'}
-            </p>
-          )}
         </div>
       </div>
 

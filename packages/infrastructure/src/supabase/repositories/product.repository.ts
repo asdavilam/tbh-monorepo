@@ -65,4 +65,13 @@ export class SupabaseProductRepository implements IProductRepository {
 
     if (error) throw new RepositoryError(`Error al eliminar producto: ${error.message}`);
   }
+
+  async bulkUpdateAssignedUser(productIds: string[], userId: string | null): Promise<void> {
+    const { error } = await this.client
+      .from('products')
+      .update({ assigned_user_id: userId })
+      .in('id', productIds);
+
+    if (error) throw new RepositoryError(`Error al asignar productos en masa: ${error.message}`);
+  }
 }

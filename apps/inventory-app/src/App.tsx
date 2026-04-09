@@ -8,6 +8,8 @@ import { PurchasePage } from './features/purchases/pages/PurchasePage';
 import { ProductsPage } from './features/products/pages/ProductsPage';
 import { ProductFormPage } from './features/products/pages/ProductFormPage';
 import { HistoryPage } from './features/history/pages/HistoryPage';
+import { UsersPage } from './features/users/pages/UsersPage';
+import { ProductAssignmentPage } from './features/users/pages/ProductAssignmentPage';
 import { colors } from './shared/theme';
 import type { ReactNode } from 'react';
 
@@ -120,6 +122,28 @@ function AppRoutes() {
           <AuthGuard>
             <RoleGuard allowedRoles={['admin', 'encargado']}>
               <HistoryPage />
+            </RoleGuard>
+          </AuthGuard>
+        }
+      />
+
+      <Route
+        path="/usuarios"
+        element={
+          <AuthGuard>
+            <RoleGuard allowedRoles={['admin']}>
+              <UsersPage />
+            </RoleGuard>
+          </AuthGuard>
+        }
+      />
+
+      <Route
+        path="/usuarios/asignar-productos"
+        element={
+          <AuthGuard>
+            <RoleGuard allowedRoles={['admin']}>
+              <ProductAssignmentPage />
             </RoleGuard>
           </AuthGuard>
         }

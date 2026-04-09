@@ -126,6 +126,48 @@ function IconLogout() {
   );
 }
 
+function IconUsers() {
+  return (
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  );
+}
+
+function IconAssign() {
+  return (
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <line x1="19" y1="8" x2="19" y2="14" />
+      <line x1="22" y1="11" x2="16" y2="11" />
+    </svg>
+  );
+}
+
 function IconMore() {
   return (
     <svg
@@ -181,15 +223,22 @@ export function BottomNav() {
 
   // Primary nav items (always visible)
   const primaryItems = [
-    { to: '/inventario', label: 'Inventario', Icon: IconInventory, show: true },
+    { to: '/inventario', label: 'Conteo', Icon: IconInventory, show: true },
     { to: '/compras', label: 'Compras', Icon: IconCart, show: canManage },
-    { to: '/lista', label: 'Lista', Icon: IconList, show: canManage },
   ].filter((item) => item.show);
 
   // Secondary items inside the "Más" drawer
   const secondaryItems = [
+    { to: '/lista', label: 'Lista de compras', Icon: IconList, show: canManage },
     { to: '/historial', label: 'Historial', Icon: IconHistory, show: canManage },
     { to: '/productos', label: 'Productos', Icon: IconBox, show: isAdmin },
+    { to: '/usuarios', label: 'Usuarios', Icon: IconUsers, show: isAdmin },
+    {
+      to: '/usuarios/asignar-productos',
+      label: 'Asignar productos',
+      Icon: IconAssign,
+      show: isAdmin,
+    },
   ].filter((item) => item.show);
 
   function handleSecondaryNav(to: string) {

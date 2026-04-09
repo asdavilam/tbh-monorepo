@@ -25,6 +25,11 @@ import {
   DeleteProductUseCase,
   GetAllUsersUseCase,
   GetInventoryHistoryByProductUseCase,
+  DeleteUserUseCase,
+  UpdateUserRoleUseCase,
+  BulkAssignProductsUseCase,
+  GetCurrentStockUseCase,
+  CorrectStockUseCase,
 } from '@tbh/application';
 
 import { supabase } from './supabase';
@@ -79,3 +84,14 @@ export const getInventoryHistoryByProduct = new GetInventoryHistoryByProductUseC
   productRepo,
   userRepo
 );
+
+export const deleteUser = new DeleteUserUseCase(userRepo);
+export const updateUserRole = new UpdateUserRoleUseCase(userRepo);
+export const bulkAssignProducts = new BulkAssignProductsUseCase(productRepo, userRepo);
+export const getCurrentStock = new GetCurrentStockUseCase(
+  productRepo,
+  inventoryRepo,
+  purchaseRepo,
+  userRepo
+);
+export const correctStock = new CorrectStockUseCase(inventoryRepo, productRepo, userRepo);

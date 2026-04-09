@@ -1,5 +1,36 @@
 import type { QualitativeValue, ProductType, UnitType, UserRole } from '@tbh/domain';
 
+export interface StockItemDto {
+  productId: string;
+  name: string;
+  type: ProductType;
+  unitType: UnitType;
+  unitLabel: string;
+  /** Stock actual calculado (lastFinalCount + compras). Null si no hay historial o es cualitativo. */
+  currentStock: number | null;
+  /** Solo para productos cualitativos */
+  qualitativeValue: QualitativeValue | null;
+  /** Fecha ISO del último conteo registrado. Null si nunca se ha contado. */
+  lastCountDate: string | null;
+  minStock: number | null;
+  /** true si currentStock < minStock (solo para numéricos con minStock definido) */
+  isLow: boolean;
+  packageUnit: string | null;
+  packageSize: number | null;
+  /** ID del producto padre si es variante. Null si es independiente o contenedor. */
+  parentProductId: string | null;
+  /** true si este producto es un contenedor de variantes (no se cuenta directamente) */
+  isVariantContainer: boolean;
+}
+
+export interface CorrectStockDto {
+  userId: string;
+  productId: string;
+  finalCount: number | null;
+  qualitativeValue: QualitativeValue | null;
+  notes?: string;
+}
+
 export interface RegisterInventoryDto {
   productId: string;
   userId: string;
@@ -64,4 +95,8 @@ export interface InventoryItemDto {
   packageUnit: string | null;
   /** Cantidad de unidades por empaque. Permite calcular fracciones automáticamente. */
   packageSize: number | null;
+  /** ID del producto padre si es variante. Null si es independiente. */
+  parentProductId: string | null;
+  /** Nombre del producto padre si es variante. Null si es independiente. */
+  parentName: string | null;
 }

@@ -1,21 +1,87 @@
-import { useState, useRef, useEffect, type FormEvent } from 'react';
+import { useState, useRef, useEffect, useCallback, type FormEvent } from 'react';
+
+const PURCHASE_DRAFT_KEY = 'tbh:draft:purchase';
+
+interface PurchaseDraft {
+  productId: string;
+  quantity: string;
+  packageCount: number;
+  notes: string;
+}
+
+function loadPurchaseDraft(): PurchaseDraft | null {
+  try {
+    const raw = localStorage.getItem(PURCHASE_DRAFT_KEY);
+    return raw ? (JSON.parse(raw) as PurchaseDraft) : null;
+  } catch {
+    return null;
+  }
+}
+
+function clearPurchaseDraft() {
+  try {
+    localStorage.removeItem(PURCHASE_DRAFT_KEY);
+  } catch {
+    // ignore
+  }
+}
+import type { ShoppingListItemDto } from '@tbh/application';
 import { useAuth } from '../../../shared/contexts/AuthContext';
 import { Layout } from '../../../shared/components/Layout';
 import { colors, fontSize, radius, transition } from '../../../shared/theme';
 import { usePurchase } from '../hooks/usePurchase';
 import { PurchaseHistory } from '../components/PurchaseHistory';
 import { BarcodeScannerButton } from '../../products/components/BarcodeScannerButton';
+import { generateShoppingList } from '../../../shared/di';
 
 const QUICK_COUNTS = [1, 2, 3, 4, 5];
 
 export function PurchasePage() {
   const { user } = useAuth();
   const [search, setSearch] = useState('');
-  const [productId, setProductId] = useState('');
-  const [quantity, setQuantity] = useState('');
-  const [packageCount, setPackageCount] = useState(1);
-  const [notes, setNotes] = useState('');
+  const [productId, setProductId] = useState(() => loadPurchaseDraft()?.productId ?? '');
+  const [quantity, setQuantity] = useState(() => loadPurchaseDraft()?.quantity ?? '');
+  const [packageCount, setPackageCount] = useState(() => loadPurchaseDraft()?.packageCount ?? 1);
+  const [notes, setNotes] = useState(() => loadPurchaseDraft()?.notes ?? '');
   const [barcodeError, setBarcodeError] = useState('');
+
+  // Shopping list state
+  const [listItems, setListItems] = useState<ShoppingListItemDto[]>([]);
+  const [listOpen, setListOpen] = useState(false);
+  const [listLoading, setListLoading] = useState(true);
+
+  const loadList = useCallback(async () => {
+    setListLoading(true);
+    try {
+      const items = await generateShoppingList.execute();
+      setListItems(items);
+      if (items.length > 0) setListOpen(true);
+    } catch {
+      setListItems([]);
+    } finally {
+      setListLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadList();
+  }, [loadList]);
+
+  // Persistir borrador mientras el usuario llena el formulario
+  useEffect(() => {
+    if (!productId) {
+      clearPurchaseDraft();
+      return;
+    }
+    try {
+      localStorage.setItem(
+        PURCHASE_DRAFT_KEY,
+        JSON.stringify({ productId, quantity, packageCount, notes })
+      );
+    } catch {
+      // localStorage no disponible, continuar sin persistencia
+    }
+  }, [productId, quantity, packageCount, notes]);
 
   const selectedCardRef = useRef<HTMLDivElement>(null);
 
@@ -63,6 +129,7 @@ export function PurchasePage() {
     const finalQty = hasPackage ? calculatedQty! : Number(quantity);
     if (!finalQty || finalQty <= 0) return;
     await submit(productId, finalQty, notes || undefined);
+    clearPurchaseDraft();
     setProductId('');
     setQuantity('');
     setPackageCount(1);
@@ -102,6 +169,143 @@ export function PurchasePage() {
               <polyline points="20 6 9 17 4 12" />
             </svg>
             Compra registrada correctamente
+          </div>
+        )}
+
+        {/* ── Shopping list panel ── */}
+        {!listLoading && (
+          <div
+            style={{
+              backgroundColor: colors.surface,
+              border: `1px solid ${listItems.length > 0 ? colors.danger + '55' : colors.border}`,
+              borderRadius: radius.md,
+              overflow: 'hidden',
+            }}
+          >
+            {/* Header */}
+            <button
+              type="button"
+              onClick={() => setListOpen((v) => !v)}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '12px 16px',
+                backgroundColor: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                gap: '8px',
+                minHeight: '48px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                    color: listItems.length > 0 ? colors.danger : colors.success,
+                  }}
+                >
+                  {listItems.length > 0
+                    ? `${listItems.length} productos por comprar`
+                    : 'Stock completo'}
+                </span>
+              </div>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke={colors.textMuted}
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+                style={{
+                  transform: listOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: `transform ${transition.base}`,
+                  flexShrink: 0,
+                }}
+              >
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+
+            {/* Items */}
+            {listOpen && listItems.length > 0 && (
+              <div style={{ borderTop: `1px solid ${colors.border}` }}>
+                {listItems.map((item) => (
+                  <button
+                    key={item.productId}
+                    type="button"
+                    onClick={() => {
+                      setSearch('');
+                      setProductId(item.productId);
+                      setQuantity('');
+                      setPackageCount(1);
+                    }}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '10px 16px',
+                      backgroundColor:
+                        productId === item.productId ? colors.primaryLight : 'transparent',
+                      border: 'none',
+                      borderBottom: `1px solid ${colors.border}`,
+                      cursor: 'pointer',
+                      gap: '12px',
+                      textAlign: 'left',
+                      minHeight: '48px',
+                      transition: `background-color ${transition.fast}`,
+                    }}
+                  >
+                    <span
+                      style={{
+                        flex: 1,
+                        fontWeight: 600,
+                        fontSize: fontSize.sm,
+                        color: productId === item.productId ? colors.primary : colors.text,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {item.productName}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        color: colors.danger,
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0,
+                      }}
+                    >
+                      {item.currentStock} / {item.minStock} {item.unitLabel}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {listOpen && listItems.length === 0 && (
+              <div
+                style={{
+                  borderTop: `1px solid ${colors.border}`,
+                  padding: '14px 16px',
+                  color: colors.success,
+                  fontSize: fontSize.sm,
+                  fontWeight: 500,
+                }}
+              >
+                Todos los productos están sobre el stock mínimo.
+              </div>
+            )}
           </div>
         )}
 

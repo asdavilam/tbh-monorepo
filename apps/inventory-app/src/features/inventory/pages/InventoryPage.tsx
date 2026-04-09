@@ -1,21 +1,148 @@
 import { useState } from 'react';
-import type { InventoryRecordResponseDto } from '@tbh/application';
+import type { InventoryItemDto, InventoryRecordResponseDto } from '@tbh/application';
 import { useAuth } from '../../../shared/contexts/AuthContext';
 import { Layout } from '../../../shared/components/Layout';
 import { CountCard } from '../components/CountCard';
+import { StockView } from '../components/StockView';
 import { useInventoryToday } from '../hooks/useInventoryToday';
-import { colors, radius, fontSize } from '../../../shared/theme';
+import { colors, radius, fontSize, transition, spacing } from '../../../shared/theme';
+
+type Tab = 'conteo' | 'stock';
+
+// ── Variant group header ──────────────────────────────────────────────────────
+
+function VariantGroupHeader({
+  parentName,
+  savedCount,
+  total,
+}: {
+  parentName: string;
+  savedCount: number;
+  total: number;
+}) {
+  const done = savedCount >= total;
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '8px 4px 4px',
+        marginTop: spacing.sm,
+      }}
+    >
+      <span
+        style={{
+          fontSize: '11px',
+          fontWeight: 800,
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase',
+          color: done ? colors.success : colors.primary,
+        }}
+      >
+        {parentName}
+      </span>
+      <span
+        style={{
+          fontSize: '11px',
+          fontWeight: 700,
+          color: done ? colors.success : colors.textMuted,
+          backgroundColor: done ? `${colors.success}18` : colors.surfaceLow,
+          padding: '2px 8px',
+          borderRadius: '999px',
+        }}
+      >
+        {savedCount}/{total}
+      </span>
+    </div>
+  );
+}
+
+// ── Render items grouped by parent ────────────────────────────────────────────
+
+function renderInventoryItems(
+  items: InventoryItemDto[],
+  userId: string,
+  onSaved: (record: InventoryRecordResponseDto) => void,
+  savedIds: Set<string>
+) {
+  const result: React.ReactNode[] = [];
+  const rendered = new Set<string>();
+  let globalIndex = 0;
+
+  // Group variants by parent
+  const byParent = new Map<string, InventoryItemDto[]>();
+  for (const item of items) {
+    if (item.parentProductId) {
+      const list = byParent.get(item.parentProductId) ?? [];
+      list.push(item);
+      byParent.set(item.parentProductId, list);
+    }
+  }
+
+  for (const item of items) {
+    if (rendered.has(item.productId)) continue;
+
+    if (!item.parentProductId) {
+      // Standalone product
+      result.push(
+        <CountCard
+          key={item.productId}
+          item={item}
+          userId={userId}
+          index={globalIndex++}
+          onSaved={onSaved}
+          autoFocus={globalIndex === 1}
+        />
+      );
+      rendered.add(item.productId);
+    } else if (!rendered.has(item.parentProductId ?? '')) {
+      // First variant of a group — render header then all variants
+      const variants = byParent.get(item.parentProductId!) ?? [];
+      const savedInGroup = variants.filter((v) => savedIds.has(v.productId)).length;
+
+      result.push(
+        <VariantGroupHeader
+          key={`header-${item.parentProductId}`}
+          parentName={item.parentName!}
+          savedCount={savedInGroup}
+          total={variants.length}
+        />
+      );
+
+      for (const variant of variants) {
+        result.push(
+          <CountCard
+            key={variant.productId}
+            item={variant}
+            userId={userId}
+            index={globalIndex++}
+            onSaved={onSaved}
+            autoFocus={false}
+          />
+        );
+        rendered.add(variant.productId);
+      }
+      rendered.add(item.parentProductId!);
+    }
+  }
+
+  return result;
+}
 
 export function InventoryPage() {
   const { user } = useAuth();
+  const [tab, setTab] = useState<Tab>('conteo');
 
   if (!user) return null;
 
+  const canSeeStock = user.role === 'admin' || user.role === 'encargado';
   const { items, loading, error, reload } = useInventoryToday(user);
-  const [savedCount, setSavedCount] = useState(0);
+  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+  const savedCount = savedIds.size;
 
-  function handleSaved(_record: InventoryRecordResponseDto) {
-    setSavedCount((n) => n + 1);
+  function handleSaved(record: InventoryRecordResponseDto) {
+    setSavedIds((prev) => new Set([...prev, record.productId]));
   }
 
   const today = new Date().toLocaleDateString('es-MX', {
@@ -24,9 +151,56 @@ export function InventoryPage() {
     month: 'long',
   });
 
+  const tabBar = canSeeStock ? (
+    <div
+      style={{
+        display: 'flex',
+        backgroundColor: colors.surfaceLow,
+        borderRadius: radius.md,
+        padding: '4px',
+        marginBottom: '16px',
+      }}
+    >
+      {(['conteo', 'stock'] as Tab[]).map((t) => (
+        <button
+          key={t}
+          onClick={() => setTab(t)}
+          style={{
+            flex: 1,
+            height: '38px',
+            border: 'none',
+            borderRadius: '8px',
+            backgroundColor: tab === t ? colors.surface : 'transparent',
+            color: tab === t ? colors.primary : colors.textMuted,
+            fontSize: fontSize.sm,
+            fontWeight: 700,
+            cursor: 'pointer',
+            letterSpacing: '0.04em',
+            textTransform: 'uppercase',
+            boxShadow: tab === t ? '0 1px 4px rgba(80,60,40,0.10)' : 'none',
+            transition: `all ${transition.fast}`,
+          }}
+        >
+          {t === 'conteo' ? 'Conteo diario' : 'Stock actual'}
+        </button>
+      ))}
+    </div>
+  ) : null;
+
+  // Stock tab — admin y encargado
+  if (tab === 'stock' && canSeeStock) {
+    return (
+      <Layout title="Inventario">
+        {tabBar}
+        <StockView />
+      </Layout>
+    );
+  }
+
   if (loading) {
     return (
       <Layout title="Inventario">
+        {tabBar}
         <div style={{ paddingTop: '48px', textAlign: 'center' }}>
           <p style={{ color: colors.textMuted, fontSize: fontSize.base }}>Cargando productos...</p>
         </div>
@@ -37,6 +211,7 @@ export function InventoryPage() {
   if (error) {
     return (
       <Layout title="Inventario">
+        {tabBar}
         <div
           style={{
             backgroundColor: colors.dangerLight,
@@ -76,6 +251,7 @@ export function InventoryPage() {
 
   return (
     <Layout title="Inventario">
+      {tabBar}
       <p
         style={{
           fontSize: '11px',
@@ -236,17 +412,8 @@ export function InventoryPage() {
             />
           </div>
 
-          {/* Checklist */}
-          {items.map((item, index) => (
-            <CountCard
-              key={item.productId}
-              item={item}
-              userId={user.id}
-              index={index}
-              onSaved={handleSaved}
-              autoFocus={index === 0}
-            />
-          ))}
+          {/* Checklist — grouped by parent when variants exist */}
+          {renderInventoryItems(items, user.id, handleSaved, savedIds)}
         </div>
       )}
     </Layout>

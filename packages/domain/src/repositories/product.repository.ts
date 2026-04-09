@@ -7,4 +7,5 @@ export interface IProductRepository {
   save(product: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>): Promise<Product>;
   update(product: Product): Promise<Product>;
   delete(id: string): Promise<void>;
+  bulkUpdateAssignedUser(productIds: string[], userId: string | null): Promise<void>;
 }

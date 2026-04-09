@@ -64,4 +64,10 @@ export class SupabaseUserRepository implements IUserRepository {
     if (error) throw new RepositoryError(`Error al actualizar usuario: ${error.message}`);
     return toUserEntity(data as ProfileRow, user.email);
   }
+
+  async delete(id: string): Promise<void> {
+    const { error } = await this.client.from('profiles').delete().eq('id', id);
+
+    if (error) throw new RepositoryError(`Error al eliminar usuario: ${error.message}`);
+  }
 }

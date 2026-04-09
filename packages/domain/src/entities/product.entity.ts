@@ -20,6 +20,8 @@ export interface Product {
   packageSize: number | null;
   /** Código de barras para identificación rápida */
   barcode: string | null;
+  /** Producto padre — null si es independiente o contenedor de variantes */
+  parentProductId: string | null;
   createdAt: Date;
   updatedAt: Date;
 }

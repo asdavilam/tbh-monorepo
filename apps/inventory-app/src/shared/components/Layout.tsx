@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { BottomNav } from './BottomNav';
+import { OfflineBanner } from './OfflineBanner';
 import { useAuth } from '../contexts/AuthContext';
 import { colors } from '../theme';
 
@@ -20,6 +21,19 @@ export function Layout({ children, title }: LayoutProps) {
         flexDirection: 'column',
       }}
     >
+      {/* Offline banner — fijo justo debajo del header */}
+      <div
+        style={{
+          position: 'fixed',
+          top: '56px',
+          left: 0,
+          right: 0,
+          zIndex: 39,
+        }}
+      >
+        <OfflineBanner />
+      </div>
+
       {/* Header */}
       <header
         style={{

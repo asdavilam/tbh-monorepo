@@ -2,11 +2,17 @@ import { useState, useEffect, type FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { ProductType, UnitType, CountFrequency, DayOfWeek } from '@tbh/domain';
 import { PRODUCT_TYPE_LABELS, UNIT_TYPE_LABELS, DAY_OF_WEEK_LABELS } from '@tbh/domain';
-import type { UserResponseDto } from '@tbh/application';
-import { createProduct, updateProduct, getAllProducts, getAllUsers } from '../../../shared/di';
+import type { ProductResponseDto, UserResponseDto } from '@tbh/application';
+import {
+  createProduct,
+  updateProduct,
+  getAllProducts,
+  getAllUsers,
+  deleteProduct,
+} from '../../../shared/di';
 import { useAuth } from '../../../shared/contexts/AuthContext';
 import { Layout } from '../../../shared/components/Layout';
-import { colors, fontSize, radius, spacing } from '../../../shared/theme';
+import { colors, fontSize, radius, spacing, transition } from '../../../shared/theme';
 import { BarcodeScannerButton } from '../components/BarcodeScannerButton';
 
 const PRODUCT_TYPES: ProductType[] = ['raw_material', 'disposable', 'basic'];
@@ -58,6 +64,11 @@ export function ProductFormPage() {
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  // Variants state (edit mode only)
+  const [variants, setVariants] = useState<ProductResponseDto[]>([]);
+  const [newVariantName, setNewVariantName] = useState('');
+  const [addingVariant, setAddingVariant] = useState(false);
+  const [variantError, setVariantError] = useState('');
 
   useEffect(() => {
     if (!user) return;
@@ -91,6 +102,8 @@ export function ProductFormPage() {
           packageSize: product.packageSize !== null ? String(product.packageSize) : '',
           barcode: product.barcode ?? '',
         });
+        // Load existing variants
+        setVariants(products.filter((p) => p.parentProductId === id));
       })
       .catch(() => setError('No se pudo cargar el producto'))
       .finally(() => setLoading(false));
@@ -115,6 +128,45 @@ export function ProductFormPage() {
         ? prev.countDays.filter((d) => d !== day)
         : [...prev.countDays, day].sort((a, b) => a - b),
     }));
+  }
+
+  async function handleAddVariant() {
+    if (!user || !id || !newVariantName.trim()) return;
+    setAddingVariant(true);
+    setVariantError('');
+    try {
+      const variant = await createProduct.execute(user.id, {
+        name: newVariantName.trim(),
+        type: form.type,
+        unitType: form.unitType,
+        unitLabel: form.unitLabel,
+        countFrequency: form.countFrequency,
+        countDays: form.countDays,
+        minStock: null,
+        assignedUserId: form.assignedUserId || null,
+        packageUnit: null,
+        packageSize: null,
+        barcode: null,
+        parentProductId: id,
+      });
+      setVariants((prev) => [...prev, variant]);
+      setNewVariantName('');
+    } catch (e) {
+      setVariantError(e instanceof Error ? e.message : 'No se pudo agregar la variante');
+    } finally {
+      setAddingVariant(false);
+    }
+  }
+
+  async function handleDeleteVariant(variantId: string, variantName: string) {
+    if (!user) return;
+    if (!window.confirm(`¿Eliminar variante "${variantName}"?`)) return;
+    try {
+      await deleteProduct.execute(user.id, variantId);
+      setVariants((prev) => prev.filter((v) => v.id !== variantId));
+    } catch (e) {
+      setVariantError(e instanceof Error ? e.message : 'No se pudo eliminar la variante');
+    }
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -521,6 +573,143 @@ export function ProductFormPage() {
             ))}
           </select>
         </div>
+
+        {/* Variantes — solo en modo edición */}
+        {isEdit && (
+          <>
+            <div style={{ height: '1px', backgroundColor: colors.border }} />
+
+            <div style={fieldGroup}>
+              <label style={labelStyle}>VARIANTES</label>
+              <p style={{ margin: 0, fontSize: '12px', color: colors.textMuted, lineHeight: 1.4 }}>
+                Cada variante se cuenta por separado pero su stock se suma al total de este
+                producto.
+              </p>
+
+              {/* Existing variants */}
+              {variants.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {variants.map((v) => (
+                    <div
+                      key={v.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '10px 14px',
+                        backgroundColor: colors.surfaceLow,
+                        border: `1px solid ${colors.border}`,
+                        borderRadius: radius.sm,
+                        gap: '8px',
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: fontSize.base,
+                          fontWeight: 600,
+                          color: colors.text,
+                          flex: 1,
+                        }}
+                      >
+                        {v.name}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteVariant(v.id, v.name)}
+                        style={{
+                          padding: '6px 8px',
+                          backgroundColor: 'transparent',
+                          border: 'none',
+                          color: colors.textLight,
+                          cursor: 'pointer',
+                          minHeight: '36px',
+                          minWidth: '36px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          borderRadius: radius.sm,
+                          transition: `color ${transition.fast}`,
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.color = colors.danger)}
+                        onMouseLeave={(e) => (e.currentTarget.style.color = colors.textLight)}
+                        aria-label={`Eliminar ${v.name}`}
+                      >
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden="true"
+                        >
+                          <polyline points="3 6 5 6 21 6" />
+                          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                          <path d="M10 11v6M14 11v6" />
+                          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Add variant */}
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
+                <input
+                  type="text"
+                  value={newVariantName}
+                  onChange={(e) => setNewVariantName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddVariant();
+                    }
+                  }}
+                  placeholder="Ej: Boing Mango"
+                  style={{ ...inputStyle, flex: 1 }}
+                />
+                <button
+                  type="button"
+                  onClick={handleAddVariant}
+                  disabled={addingVariant || !newVariantName.trim()}
+                  style={{
+                    height: '52px',
+                    padding: '0 18px',
+                    backgroundColor: newVariantName.trim() ? colors.primary : colors.border,
+                    color: newVariantName.trim() ? '#fff' : colors.textMuted,
+                    border: 'none',
+                    borderRadius: radius.sm,
+                    fontSize: fontSize.sm,
+                    fontWeight: 700,
+                    cursor: addingVariant || !newVariantName.trim() ? 'not-allowed' : 'pointer',
+                    whiteSpace: 'nowrap',
+                    transition: `background-color ${transition.fast}`,
+                  }}
+                >
+                  {addingVariant ? '...' : '+ Agregar'}
+                </button>
+              </div>
+
+              {variantError && (
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: fontSize.sm,
+                    color: colors.danger,
+                    backgroundColor: colors.dangerLight,
+                    padding: '8px 12px',
+                    borderRadius: radius.sm,
+                  }}
+                >
+                  {variantError}
+                </p>
+              )}
+            </div>
+          </>
+        )}
 
         {error && (
           <p

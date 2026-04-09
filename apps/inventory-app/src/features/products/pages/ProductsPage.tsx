@@ -126,125 +126,227 @@ export function ProductsPage() {
           </p>
         )}
 
-        {/* Product list */}
-        {products.map((product) => (
-          <div
-            key={product.id}
-            style={{
-              backgroundColor: colors.surface,
-              border: `1px solid ${colors.border}`,
-              borderRadius: radius.md,
-              padding: '18px 20px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '10px',
-            }}
-          >
-            {/* Name + type */}
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'flex-start',
-                gap: '8px',
-              }}
-            >
-              <span
-                style={{
-                  fontWeight: 700,
-                  fontSize: fontSize.md,
-                  color: colors.text,
-                  flex: 1,
-                  textTransform: 'uppercase',
-                  letterSpacing: '-0.01em',
-                }}
-              >
-                {product.name}
-              </span>
-              <span
-                style={{
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  color: colors.primary,
-                  backgroundColor: colors.surfaceLow,
-                  padding: '3px 10px',
-                  borderRadius: '999px',
-                  whiteSpace: 'nowrap',
-                  letterSpacing: '0.04em',
-                }}
-              >
-                {PRODUCT_TYPE_LABELS[product.type]}
-              </span>
-            </div>
+        {/* Product list — containers first, then variants indented, then standalones */}
+        {(() => {
+          const variantParentIds = new Set(
+            products.filter((p) => p.parentProductId !== null).map((p) => p.parentProductId!)
+          );
+          const rendered = new Set<string>();
+          const nodes: React.ReactNode[] = [];
 
-            {/* Details */}
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: '6px 16px',
-                fontSize: fontSize.sm,
-                color: colors.textMuted,
-              }}
-            >
-              <span>
-                <span style={{ fontWeight: 600, color: colors.text }}>Unidad:</span>{' '}
-                {UNIT_TYPE_LABELS[product.unitType]} ({product.unitLabel})
-              </span>
-              <span>
-                <span style={{ fontWeight: 600, color: colors.text }}>Stock mín:</span>{' '}
-                {product.minStock !== null ? product.minStock : '—'}
-              </span>
-              <span style={{ gridColumn: '1 / -1' }}>
-                <span style={{ fontWeight: 600, color: colors.text }}>Asignado a:</span>{' '}
-                {getUserName(product.assignedUserId)}
-              </span>
-            </div>
+          for (const product of products) {
+            if (rendered.has(product.id)) continue;
+            if (product.parentProductId) continue; // variants rendered under parent
 
-            {/* Actions */}
-            <div style={{ display: 'flex', gap: '8px', marginTop: '2px' }}>
-              <button
-                onClick={() => navigate(`/productos/${product.id}/editar`)}
-                style={{
-                  flex: 1,
-                  backgroundColor: colors.surfaceLow,
-                  color: colors.primary,
-                  border: `1px solid ${colors.border}`,
-                  borderRadius: radius.sm,
-                  padding: '10px',
-                  fontSize: '13px',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  minHeight: '44px',
-                  letterSpacing: '0.04em',
-                }}
-              >
-                Editar
-              </button>
-              <button
-                onClick={() => handleDelete(product.id, product.name)}
-                disabled={deletingId === product.id}
-                style={{
-                  flex: 1,
-                  backgroundColor: colors.dangerLight,
-                  color: colors.danger,
-                  border: `1px solid ${colors.danger}44`,
-                  borderRadius: radius.sm,
-                  padding: '10px',
-                  fontSize: '13px',
-                  fontWeight: 700,
-                  cursor: deletingId === product.id ? 'not-allowed' : 'pointer',
-                  minHeight: '44px',
-                  opacity: deletingId === product.id ? 0.6 : 1,
-                  letterSpacing: '0.04em',
-                }}
-              >
-                {deletingId === product.id ? 'Eliminando...' : 'Eliminar'}
-              </button>
-            </div>
-          </div>
-        ))}
+            const isContainer = variantParentIds.has(product.id);
+            const children = isContainer
+              ? products.filter((p) => p.parentProductId === product.id)
+              : [];
+
+            nodes.push(
+              <div key={product.id}>
+                <ProductCard
+                  product={product}
+                  getUserName={getUserName}
+                  onEdit={() => navigate(`/productos/${product.id}/editar`)}
+                  onDelete={() => handleDelete(product.id, product.name)}
+                  isDeleting={deletingId === product.id}
+                  isContainer={isContainer}
+                />
+                {children.map((variant) => {
+                  rendered.add(variant.id);
+                  return (
+                    <div
+                      key={variant.id}
+                      style={{
+                        paddingLeft: '16px',
+                        borderLeft: `3px solid ${colors.border}`,
+                        marginLeft: '12px',
+                        marginTop: '6px',
+                      }}
+                    >
+                      <ProductCard
+                        product={variant}
+                        getUserName={getUserName}
+                        onEdit={() => navigate(`/productos/${variant.id}/editar`)}
+                        onDelete={() => handleDelete(variant.id, variant.name)}
+                        isDeleting={deletingId === variant.id}
+                        isContainer={false}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            );
+            rendered.add(product.id);
+          }
+          return nodes;
+        })()}
       </div>
     </Layout>
+  );
+}
+
+// ── Product card component ────────────────────────────────────────────────────
+
+interface ProductCardProps {
+  product: import('@tbh/application').ProductResponseDto;
+  getUserName: (id: string | null) => string;
+  onEdit: () => void;
+  onDelete: () => void;
+  isDeleting: boolean;
+  isContainer: boolean;
+}
+
+function ProductCard({
+  product,
+  getUserName,
+  onEdit,
+  onDelete,
+  isDeleting,
+  isContainer,
+}: ProductCardProps) {
+  return (
+    <div
+      style={{
+        backgroundColor: colors.surface,
+        border: `1px solid ${colors.border}`,
+        borderRadius: radius.md,
+        padding: '14px 16px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
+        opacity: isDeleting ? 0.6 : 1,
+      }}
+    >
+      {/* Name + badges */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          gap: '8px',
+        }}
+      >
+        <span
+          style={{
+            fontWeight: 700,
+            fontSize: fontSize.md,
+            color: colors.text,
+            flex: 1,
+            textTransform: 'uppercase',
+            letterSpacing: '-0.01em',
+          }}
+        >
+          {product.name}
+        </span>
+        <div
+          style={{
+            display: 'flex',
+            gap: '6px',
+            flexShrink: 0,
+            flexWrap: 'wrap',
+            justifyContent: 'flex-end',
+          }}
+        >
+          {isContainer && (
+            <span
+              style={{
+                fontSize: '10px',
+                fontWeight: 700,
+                color: colors.primary,
+                backgroundColor: `${colors.primary}15`,
+                padding: '2px 8px',
+                borderRadius: '999px',
+                letterSpacing: '0.04em',
+              }}
+            >
+              GRUPO
+            </span>
+          )}
+          <span
+            style={{
+              fontSize: '11px',
+              fontWeight: 700,
+              color: colors.primary,
+              backgroundColor: colors.surfaceLow,
+              padding: '3px 10px',
+              borderRadius: '999px',
+              letterSpacing: '0.04em',
+            }}
+          >
+            {PRODUCT_TYPE_LABELS[product.type]}
+          </span>
+        </div>
+      </div>
+
+      {/* Details */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: '4px 16px',
+          fontSize: fontSize.sm,
+          color: colors.textMuted,
+        }}
+      >
+        <span>
+          <span style={{ fontWeight: 600, color: colors.text }}>Unidad:</span>{' '}
+          {UNIT_TYPE_LABELS[product.unitType]} ({product.unitLabel})
+        </span>
+        {!isContainer && (
+          <span>
+            <span style={{ fontWeight: 600, color: colors.text }}>Stock mín:</span>{' '}
+            {product.minStock !== null ? product.minStock : '—'}
+          </span>
+        )}
+        <span style={{ gridColumn: '1 / -1' }}>
+          <span style={{ fontWeight: 600, color: colors.text }}>Asignado a:</span>{' '}
+          {getUserName(product.assignedUserId)}
+        </span>
+      </div>
+
+      {/* Actions */}
+      <div style={{ display: 'flex', gap: '8px', marginTop: '2px' }}>
+        <button
+          onClick={onEdit}
+          style={{
+            flex: 1,
+            backgroundColor: colors.surfaceLow,
+            color: colors.primary,
+            border: `1px solid ${colors.border}`,
+            borderRadius: radius.sm,
+            padding: '10px',
+            fontSize: '13px',
+            fontWeight: 700,
+            cursor: 'pointer',
+            minHeight: '44px',
+            letterSpacing: '0.04em',
+          }}
+        >
+          Editar
+        </button>
+        <button
+          onClick={onDelete}
+          disabled={isDeleting}
+          style={{
+            flex: 1,
+            backgroundColor: colors.dangerLight,
+            color: colors.danger,
+            border: `1px solid ${colors.danger}44`,
+            borderRadius: radius.sm,
+            padding: '10px',
+            fontSize: '13px',
+            fontWeight: 700,
+            cursor: isDeleting ? 'not-allowed' : 'pointer',
+            minHeight: '44px',
+            opacity: isDeleting ? 0.6 : 1,
+            letterSpacing: '0.04em',
+          }}
+        >
+          {isDeleting ? 'Eliminando...' : 'Eliminar'}
+        </button>
+      </div>
+    </div>
   );
 }

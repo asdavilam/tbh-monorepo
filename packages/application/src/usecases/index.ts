@@ -11,3 +11,8 @@ export { DeleteProductUseCase } from './delete-product.usecase';
 export { GetAllUsersUseCase } from './get-all-users.usecase';
 export { GetRecentPurchasesUseCase } from './get-recent-purchases.usecase';
 export { GetInventoryHistoryByProductUseCase } from './get-inventory-history-by-product.usecase';
+export { DeleteUserUseCase } from './delete-user.usecase';
+export { UpdateUserRoleUseCase } from './update-user-role.usecase';
+export { BulkAssignProductsUseCase } from './bulk-assign-products.usecase';
+export { GetCurrentStockUseCase } from './get-current-stock.usecase';
+export { CorrectStockUseCase } from './correct-stock.usecase';

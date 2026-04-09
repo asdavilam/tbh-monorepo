@@ -35,9 +35,22 @@ export class GetInventoryForTodayUseCase {
     const visible = products.filter((p) => isProductVisibleToUser(p, dto.userId, adminUser));
     const dueToday = getProductsDueToday(visible, dto.date);
 
-    // Para cada producto, calcular stock inicial desde el último registro
+    // Determinar qué productos son contenedores de variantes (no se cuentan directamente)
+    // Necesitamos todos los productos para detectar padres aunque el usuario no los vea todos
+    const allProductsForCheck = adminUser ? products : await this.productRepo.findAll();
+    const variantParentIds = new Set(
+      allProductsForCheck.filter((p) => p.parentProductId !== null).map((p) => p.parentProductId!)
+    );
+
+    // Mapa id → nombre para lookup de padres
+    const productNameById = new Map(allProductsForCheck.map((p) => [p.id, p.name]));
+
+    // Excluir contenedores — solo contar variantes y productos independientes
+    const countable = dueToday.filter((p) => !variantParentIds.has(p.id));
+
+    // Para cada producto contable, calcular stock inicial
     const items: InventoryItemDto[] = await Promise.all(
-      dueToday.map(async (product) => {
+      countable.map(async (product) => {
         let initialStock: number | null = null;
 
         if (product.unitType !== 'qualitative') {
@@ -63,6 +76,10 @@ export class GetInventoryForTodayUseCase {
           initialStock,
           packageUnit: product.packageUnit,
           packageSize: product.packageSize,
+          parentProductId: product.parentProductId,
+          parentName: product.parentProductId
+            ? (productNameById.get(product.parentProductId) ?? null)
+            : null,
         };
       })
     );

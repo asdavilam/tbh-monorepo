@@ -1,11 +1,15 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
+import { injectSpeedInsights } from '@vercel/speed-insights';
 import { App } from './App';
 import { ErrorBoundary } from './shared/components/ErrorBoundary';
 import { supabaseConfigured } from './shared/supabase';
 import { colors, fontSize, radius } from './shared/theme';
 import './index.css';
+
+// Initialize Vercel Speed Insights
+injectSpeedInsights();
 
 function ConfigError() {
   return (

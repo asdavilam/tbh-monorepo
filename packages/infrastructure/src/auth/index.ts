@@ -73,4 +73,12 @@ export class SupabaseAuthClient {
     const { error } = await this.client.auth.updateUser({ password: newPassword });
     if (error) throw new RepositoryError(`Error al actualizar contraseña: ${error.message}`);
   }
+
+  async exchangeCodeForSession(code: string): Promise<AuthSession> {
+    const { data, error } = await this.client.auth.exchangeCodeForSession(code);
+    if (error)
+      throw new RepositoryError(`Error al procesar código de invitación: ${error.message}`);
+    if (!data.session?.user) throw new RepositoryError('No se pudo establecer la sesión');
+    return { userId: data.session.user.id, email: data.session.user.email ?? '' };
+  }
 }

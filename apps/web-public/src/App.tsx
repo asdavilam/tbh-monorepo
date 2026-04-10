@@ -1,37 +1,44 @@
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Navbar } from './components/Navbar';
+import { Footer } from './components/Footer';
+import { Home } from './pages/Home';
+import { Menu } from './pages/Menu';
+import { About } from './pages/About';
+import { Contact } from './pages/Contact';
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+}
+
+function Layout() {
+  return (
+    <div className="flex flex-col min-h-screen">
+      <Navbar />
+      <main className="flex-1">
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/menu" element={<Menu />} />
+          <Route path="/nosotros" element={<About />} />
+          <Route path="/contacto" element={<Contact />} />
+          {/* Fallback */}
+          <Route path="*" element={<Home />} />
+        </Routes>
+      </main>
+      <Footer />
+    </div>
+  );
+}
+
 export function App() {
   return (
-    <main
-      style={{
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#111827',
-        color: 'white',
-        textAlign: 'center',
-        padding: '24px',
-      }}
-    >
-      <h1
-        style={{
-          fontSize: 'clamp(2rem, 5vw, 4rem)',
-          fontWeight: 800,
-          letterSpacing: '-0.02em',
-          marginBottom: '16px',
-        }}
-      >
-        TBH
-      </h1>
-      <p
-        style={{
-          fontSize: 'clamp(1rem, 2.5vw, 1.5rem)',
-          color: '#9ca3af',
-          fontWeight: 400,
-        }}
-      >
-        En construcción
-      </p>
-    </main>
+    <BrowserRouter>
+      <ScrollToTop />
+      <Layout />
+    </BrowserRouter>
   );
 }

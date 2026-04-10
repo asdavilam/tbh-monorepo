@@ -16,3 +16,4 @@ export { UpdateUserRoleUseCase } from './update-user-role.usecase';
 export { BulkAssignProductsUseCase } from './bulk-assign-products.usecase';
 export { GetCurrentStockUseCase } from './get-current-stock.usecase';
 export { CorrectStockUseCase } from './correct-stock.usecase';
+export { InviteUserUseCase } from './invite-user.usecase';

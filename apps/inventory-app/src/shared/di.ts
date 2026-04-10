@@ -30,6 +30,7 @@ import {
   BulkAssignProductsUseCase,
   GetCurrentStockUseCase,
   CorrectStockUseCase,
+  InviteUserUseCase,
 } from '@tbh/application';
 
 import { supabase } from './supabase';
@@ -95,3 +96,4 @@ export const getCurrentStock = new GetCurrentStockUseCase(
   userRepo
 );
 export const correctStock = new CorrectStockUseCase(inventoryRepo, productRepo, userRepo);
+export const inviteUser = new InviteUserUseCase(userRepo, authClient);

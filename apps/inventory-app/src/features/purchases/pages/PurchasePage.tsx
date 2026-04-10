@@ -33,6 +33,8 @@ import { usePurchase } from '../hooks/usePurchase';
 import { PurchaseHistory } from '../components/PurchaseHistory';
 import { BarcodeScannerButton } from '../../products/components/BarcodeScannerButton';
 import { generateShoppingList } from '../../../shared/di';
+import { loadManualItems } from '../../../shared/shoppingListStorage';
+import type { ManualItem } from '../../shopping-list/hooks/useShoppingList';
 
 const QUICK_COUNTS = [1, 2, 3, 4, 5];
 
@@ -47,6 +49,7 @@ export function PurchasePage() {
 
   // Shopping list state
   const [listItems, setListItems] = useState<ShoppingListItemDto[]>([]);
+  const [manualItems, setManualItems] = useState<ManualItem[]>([]);
   const [listOpen, setListOpen] = useState(false);
   const [listLoading, setListLoading] = useState(true);
 
@@ -62,6 +65,14 @@ export function PurchasePage() {
       setListLoading(false);
     }
   }, []);
+
+  // Carga ítems manuales del usuario desde localStorage
+  useEffect(() => {
+    if (!user) return;
+    const manual = loadManualItems(user.id);
+    setManualItems(manual);
+    if (manual.length > 0) setListOpen(true);
+  }, [user]);
 
   useEffect(() => {
     loadList();
@@ -177,7 +188,7 @@ export function PurchasePage() {
           <div
             style={{
               backgroundColor: colors.surface,
-              border: `1px solid ${listItems.length > 0 ? colors.danger + '55' : colors.border}`,
+              border: `1px solid ${listItems.length > 0 || manualItems.length > 0 ? colors.danger + '55' : colors.border}`,
               borderRadius: radius.md,
               overflow: 'hidden',
             }}
@@ -206,11 +217,14 @@ export function PurchasePage() {
                     fontWeight: 700,
                     letterSpacing: '0.08em',
                     textTransform: 'uppercase',
-                    color: listItems.length > 0 ? colors.danger : colors.success,
+                    color:
+                      listItems.length > 0 || manualItems.length > 0
+                        ? colors.danger
+                        : colors.success,
                   }}
                 >
-                  {listItems.length > 0
-                    ? `${listItems.length} productos por comprar`
+                  {listItems.length + manualItems.length > 0
+                    ? `${listItems.length + manualItems.length} productos por comprar`
                     : 'Stock completo'}
                 </span>
               </div>
@@ -235,11 +249,12 @@ export function PurchasePage() {
             </button>
 
             {/* Items */}
-            {listOpen && listItems.length > 0 && (
+            {listOpen && (listItems.length > 0 || manualItems.length > 0) && (
               <div style={{ borderTop: `1px solid ${colors.border}` }}>
+                {/* Auto items (bajo stock) */}
                 {listItems.map((item) => (
                   <button
-                    key={item.productId}
+                    key={`auto-${item.productId}`}
                     type="button"
                     onClick={() => {
                       setSearch('');
@@ -290,10 +305,68 @@ export function PurchasePage() {
                     </span>
                   </button>
                 ))}
+
+                {/* Manual items */}
+                {manualItems.map((item, idx) => (
+                  <button
+                    key={`manual-${idx}`}
+                    type="button"
+                    onClick={() => {
+                      setSearch('');
+                      setProductId(item.productId);
+                      setQuantity('');
+                      setPackageCount(1);
+                    }}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '10px 16px',
+                      backgroundColor:
+                        productId === item.productId ? colors.primaryLight : 'transparent',
+                      border: 'none',
+                      borderBottom: `1px solid ${colors.border}`,
+                      cursor: 'pointer',
+                      gap: '12px',
+                      textAlign: 'left',
+                      minHeight: '48px',
+                      transition: `background-color ${transition.fast}`,
+                    }}
+                  >
+                    <span
+                      style={{
+                        flex: 1,
+                        fontWeight: 600,
+                        fontSize: fontSize.sm,
+                        color: productId === item.productId ? colors.primary : colors.text,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {item.productName}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        color: colors.warning,
+                        backgroundColor: colors.warningLight,
+                        padding: '2px 8px',
+                        borderRadius: '999px',
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0,
+                      }}
+                    >
+                      Manual
+                    </span>
+                  </button>
+                ))}
               </div>
             )}
 
-            {listOpen && listItems.length === 0 && (
+            {listOpen && listItems.length === 0 && manualItems.length === 0 && (
               <div
                 style={{
                   borderTop: `1px solid ${colors.border}`,
@@ -649,7 +722,6 @@ export function PurchasePage() {
                           required
                           placeholder="0"
                           inputMode="decimal"
-                          autoFocus
                           style={inputStyle}
                         />
                       </div>

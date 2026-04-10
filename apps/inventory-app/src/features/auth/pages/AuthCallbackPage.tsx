@@ -232,7 +232,7 @@ export function AuthCallbackPage() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={submitting}
               style={{
                 width: '100%',
                 height: '52px',

@@ -7,22 +7,33 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const ALLOWED_ROLES = ['admin', 'encargado', 'trabajador'];
 
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Authorization, Content-Type, apikey, x-client-info',
+};
+
+function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+  });
+}
+
 Deno.serve(async (req: Request) => {
-  // Solo POST
+  // Responder al preflight CORS
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { status: 204, headers: CORS_HEADERS });
+  }
+
   if (req.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Método no permitido' }), {
-      status: 405,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return json({ error: 'Método no permitido' }, 405);
   }
 
   // Leer JWT del caller
   const authHeader = req.headers.get('Authorization');
   if (!authHeader) {
-    return new Response(JSON.stringify({ error: 'No autorizado' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return json({ error: 'No autorizado' }, 401);
   }
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -37,10 +48,7 @@ Deno.serve(async (req: Request) => {
   const jwt = authHeader.replace('Bearer ', '');
   const { data: callerData, error: callerError } = await adminClient.auth.getUser(jwt);
   if (callerError || !callerData.user) {
-    return new Response(JSON.stringify({ error: 'Token inválido' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return json({ error: 'Token inválido' }, 401);
   }
 
   // Verificar que el caller es admin en la tabla profiles
@@ -51,10 +59,7 @@ Deno.serve(async (req: Request) => {
     .single();
 
   if (profileError || !callerProfile || callerProfile.role !== 'admin') {
-    return new Response(JSON.stringify({ error: 'Sin permisos para invitar usuarios' }), {
-      status: 403,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return json({ error: 'Sin permisos para invitar usuarios' }, 403);
   }
 
   // Parsear body
@@ -65,41 +70,32 @@ Deno.serve(async (req: Request) => {
     name = body.name;
     role = body.role ?? 'trabajador';
   } catch {
-    return new Response(JSON.stringify({ error: 'Body inválido' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return json({ error: 'Body inválido' }, 400);
   }
 
-  // Validaciones básicas
   if (!email || !name) {
-    return new Response(JSON.stringify({ error: 'email y name son requeridos' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return json({ error: 'email y name son requeridos' }, 400);
   }
   if (!ALLOWED_ROLES.includes(role)) {
-    return new Response(JSON.stringify({ error: 'Rol inválido' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return json({ error: 'Rol inválido' }, 400);
   }
 
   // Enviar invitación
-  const { error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(email, {
-    data: { name, role },
-    redirectTo: 'https://tbh-inventory-app.vercel.app/auth/callback',
-  });
+  const { data: inviteData, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(
+    email,
+    {
+      data: { name, role },
+      redirectTo: 'https://app.trailerburger.mx/auth/callback',
+    }
+  );
 
   if (inviteError) {
-    return new Response(JSON.stringify({ error: inviteError.message }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return json({ error: inviteError.message }, 400);
   }
 
-  return new Response(JSON.stringify({ success: true }), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json' },
-  });
+  // Crear perfil directamente con service role (el trigger puede fallar en algunos flujos)
+  const userId = inviteData.user.id;
+  await adminClient.from('profiles').upsert({ id: userId, name, role }, { onConflict: 'id' });
+
+  return json({ success: true });
 });

@@ -3,6 +3,7 @@
 // No importa componentes React, hooks ni UseCases.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
+import type { UserRole } from '@tbh/domain';
 import { RepositoryError } from '../errors';
 
 export interface AuthSession {
@@ -18,19 +19,6 @@ export class SupabaseAuthClient {
 
     if (error) throw new RepositoryError(`Error al iniciar sesión: ${error.message}`);
     if (!data.user) throw new RepositoryError('No se pudo obtener el usuario tras el login');
-
-    return { userId: data.user.id, email: data.user.email ?? email };
-  }
-
-  async signUp(email: string, password: string, name: string): Promise<AuthSession> {
-    const { data, error } = await this.client.auth.signUp({
-      email,
-      password,
-      options: { data: { name } },
-    });
-
-    if (error) throw new RepositoryError(`Error al registrarse: ${error.message}`);
-    if (!data.user) throw new RepositoryError('No se pudo crear el usuario');
 
     return { userId: data.user.id, email: data.user.email ?? email };
   }
@@ -62,5 +50,18 @@ export class SupabaseAuthClient {
     });
 
     return () => data.subscription.unsubscribe();
+  }
+
+  async inviteUser(email: string, name: string, role: UserRole): Promise<void> {
+    const { error } = await this.client.functions.invoke('invite-user', {
+      body: { email, name, role },
+    });
+
+    if (error) throw new RepositoryError(`Error al invitar usuario: ${error.message}`);
+  }
+
+  async updatePassword(newPassword: string): Promise<void> {
+    const { error } = await this.client.auth.updateUser({ password: newPassword });
+    if (error) throw new RepositoryError(`Error al actualizar contraseña: ${error.message}`);
   }
 }

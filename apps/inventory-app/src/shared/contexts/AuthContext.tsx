@@ -13,8 +13,8 @@ interface AuthContextValue {
   user: AuthUser | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, name: string) => Promise<void>;
   signOut: () => Promise<void>;
+  updatePassword: (newPassword: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -64,19 +64,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await loadUser(session.userId, session.email);
   }
 
-  async function signUp(email: string, password: string, name: string) {
-    await authClient.signUp(email, password, name);
-    // El trigger de Supabase crea el perfil automáticamente.
-    // onAuthStateChange disparará loadUser cuando la sesión esté lista.
-  }
-
   async function signOut() {
     await authClient.signOut();
     setUser(null);
   }
 
+  async function updatePassword(newPassword: string) {
+    await authClient.updatePassword(newPassword);
+  }
+
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, loading, signIn, signOut, updatePassword }}>
       {children}
     </AuthContext.Provider>
   );

@@ -4,21 +4,20 @@ import { useAuth } from '../../../shared/contexts/AuthContext';
 import { colors, radius } from '../../../shared/theme';
 
 export function AuthCallbackPage() {
-  const { updatePassword } = useAuth();
+  const { user, loading: authLoading, updatePassword } = useAuth();
   const navigate = useNavigate();
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  // Calcular síncronamente — el hash está disponible desde el primer render
-  const isInvite = window.location.hash.includes('type=invite');
-
+  // Supabase procesa el token de invitación del hash automáticamente y establece
+  // la sesión. Una vez que authLoading termina, si no hay usuario = no hay token válido.
   useEffect(() => {
-    if (!isInvite) {
+    if (!authLoading && !user) {
       navigate('/login', { replace: true });
     }
-  }, [isInvite, navigate]);
+  }, [authLoading, user, navigate]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -33,18 +32,18 @@ export function AuthCallbackPage() {
       return;
     }
 
-    setLoading(true);
+    setSubmitting(true);
     try {
       await updatePassword(password);
       navigate('/inventario', { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo actualizar la contraseña');
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   }
 
-  if (!isInvite) return null;
+  if (authLoading || !user) return null;
 
   return (
     <div
@@ -233,11 +232,11 @@ export function AuthCallbackPage() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={submitting}
               style={{
                 width: '100%',
                 height: '52px',
-                backgroundColor: loading ? colors.textLight : colors.primary,
+                backgroundColor: submitting ? colors.textLight : colors.primary,
                 color: '#fff',
                 border: 'none',
                 borderRadius: radius.md,
@@ -245,16 +244,16 @@ export function AuthCallbackPage() {
                 fontWeight: 700,
                 letterSpacing: '0.06em',
                 textTransform: 'uppercase',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                boxShadow: loading ? 'none' : `0 4px 16px ${colors.primary}33`,
+                cursor: submitting ? 'not-allowed' : 'pointer',
+                boxShadow: submitting ? 'none' : `0 4px 16px ${colors.primary}33`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '8px',
               }}
             >
-              {loading ? 'Guardando...' : 'Crear contraseña'}
-              {!loading && (
+              {submitting ? 'Guardando...' : 'Crear contraseña'}
+              {!submitting && (
                 <svg
                   width="16"
                   height="16"

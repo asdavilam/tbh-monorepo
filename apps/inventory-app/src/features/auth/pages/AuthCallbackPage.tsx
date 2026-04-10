@@ -3,11 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../shared/contexts/AuthContext';
 import { colors, radius } from '../../../shared/theme';
 
-// Detecta si la URL contiene el hash de una invitación de Supabase
-function isInviteFlow(): boolean {
-  return window.location.hash.includes('type=invite');
-}
-
 export function AuthCallbackPage() {
   const { updatePassword } = useAuth();
   const navigate = useNavigate();
@@ -15,11 +10,15 @@ export function AuthCallbackPage() {
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [isInvite, setIsInvite] = useState(false);
+
+  // Calcular síncronamente — el hash está disponible desde el primer render
+  const isInvite = window.location.hash.includes('type=invite');
 
   useEffect(() => {
-    setIsInvite(isInviteFlow());
-  }, []);
+    if (!isInvite) {
+      navigate('/login', { replace: true });
+    }
+  }, [isInvite, navigate]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -45,11 +44,7 @@ export function AuthCallbackPage() {
     }
   }
 
-  if (!isInvite) {
-    // Si no es un flujo de invitación, redirigir al login
-    navigate('/login', { replace: true });
-    return null;
-  }
+  if (!isInvite) return null;
 
   return (
     <div

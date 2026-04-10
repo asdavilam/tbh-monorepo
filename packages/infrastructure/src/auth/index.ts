@@ -57,7 +57,16 @@ export class SupabaseAuthClient {
       body: { email, name, role },
     });
 
-    if (error) throw new RepositoryError(`Error al invitar usuario: ${error.message}`);
+    if (error) {
+      let message = error.message;
+      try {
+        const body = await (error as { context?: Response }).context?.json();
+        if (body?.error) message = body.error;
+      } catch {
+        /* ignore */
+      }
+      throw new RepositoryError(message);
+    }
   }
 
   async updatePassword(newPassword: string): Promise<void> {

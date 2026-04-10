@@ -1,28 +1,54 @@
-import { useState, type FormEvent } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../shared/contexts/AuthContext';
 import { colors, radius } from '../../../shared/theme';
 
-export function LoginPage() {
-  const { signIn } = useAuth();
+// Detecta si la URL contiene el hash de una invitación de Supabase
+function isInviteFlow(): boolean {
+  return window.location.hash.includes('type=invite');
+}
+
+export function AuthCallbackPage() {
+  const { updatePassword } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isInvite, setIsInvite] = useState(false);
+
+  useEffect(() => {
+    setIsInvite(isInviteFlow());
+  }, []);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError('');
+
+    if (password.length < 8) {
+      setError('La contraseña debe tener al menos 8 caracteres');
+      return;
+    }
+    if (password !== confirm) {
+      setError('Las contraseñas no coinciden');
+      return;
+    }
+
     setLoading(true);
     try {
-      await signIn(email, password);
-      navigate('/inventario');
-    } catch {
-      setError('Correo o contraseña incorrectos');
+      await updatePassword(password);
+      navigate('/inventario', { replace: true });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo actualizar la contraseña');
     } finally {
       setLoading(false);
     }
+  }
+
+  if (!isInvite) {
+    // Si no es un flujo de invitación, redirigir al login
+    navigate('/login', { replace: true });
+    return null;
   }
 
   return (
@@ -53,25 +79,25 @@ export function LoginPage() {
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: '140px',
-              height: '140px',
+              width: '100px',
+              height: '100px',
               backgroundColor: colors.surface,
               borderRadius: radius.lg,
               marginBottom: '16px',
-              boxShadow: `0 8px 24px ${colors.primary}22`,
               border: `1px solid ${colors.border}`,
+              boxShadow: `0 8px 24px ${colors.primary}33`,
               overflow: 'hidden',
             }}
           >
             <img
               src="/isologo.png"
               alt="Trailer Burger Hall"
-              style={{ width: '120px', height: '120px', objectFit: 'contain' }}
+              style={{ width: '88px', height: '88px', objectFit: 'contain' }}
             />
           </div>
           <h1
             style={{
-              fontSize: '22px',
+              fontSize: '20px',
               fontWeight: 900,
               color: colors.primary,
               letterSpacing: '-0.02em',
@@ -79,10 +105,10 @@ export function LoginPage() {
               marginBottom: '4px',
             }}
           >
-            Trailer Burger Hall
+            Bienvenido al equipo
           </h1>
           <p style={{ fontSize: '13px', color: colors.textMuted, fontWeight: 500 }}>
-            Sistema de Inventario
+            Crea tu contraseña para acceder al sistema
           </p>
         </div>
 
@@ -137,7 +163,7 @@ export function LoginPage() {
           >
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <label
-                htmlFor="email"
+                htmlFor="password"
                 style={{
                   fontSize: '10px',
                   fontWeight: 700,
@@ -146,17 +172,17 @@ export function LoginPage() {
                   textTransform: 'uppercase',
                 }}
               >
-                Correo Electrónico
+                Nueva contraseña
               </label>
               <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 required
                 autoFocus
-                autoComplete="email"
-                placeholder="manager@trailerburger.com"
+                autoComplete="new-password"
+                placeholder="Mínimo 8 caracteres"
                 style={{
                   width: '100%',
                   height: '52px',
@@ -175,7 +201,7 @@ export function LoginPage() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <label
-                htmlFor="password"
+                htmlFor="confirm"
                 style={{
                   fontSize: '10px',
                   fontWeight: 700,
@@ -184,16 +210,16 @@ export function LoginPage() {
                   textTransform: 'uppercase',
                 }}
               >
-                Contraseña
+                Confirmar contraseña
               </label>
               <input
-                id="password"
+                id="confirm"
                 type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
                 required
-                autoComplete="current-password"
-                placeholder="••••••••"
+                autoComplete="new-password"
+                placeholder="Repite tu contraseña"
                 style={{
                   width: '100%',
                   height: '52px',
@@ -232,7 +258,7 @@ export function LoginPage() {
                 gap: '8px',
               }}
             >
-              {loading ? 'Entrando...' : 'Entrar al Sistema'}
+              {loading ? 'Guardando...' : 'Crear contraseña'}
               {!loading && (
                 <svg
                   width="16"
@@ -253,7 +279,6 @@ export function LoginPage() {
           </form>
         </div>
 
-        {/* Footer */}
         <p
           style={{
             marginTop: '32px',

@@ -1,7 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './shared/contexts/AuthContext';
 import { LoginPage } from './features/auth/pages/LoginPage';
-import { RegisterPage } from './features/auth/pages/RegisterPage';
+import { AuthCallbackPage } from './features/auth/pages/AuthCallbackPage';
 import { InventoryPage } from './features/inventory/pages/InventoryPage';
 import { ShoppingListPage } from './features/shopping-list/pages/ShoppingListPage';
 import { PurchasePage } from './features/purchases/pages/PurchasePage';
@@ -50,7 +50,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
-      <Route path="/registro" element={<RegisterPage />} />
+      <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
       <Route
         path="/inventario"

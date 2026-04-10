@@ -93,9 +93,10 @@ Deno.serve(async (req: Request) => {
     return json({ error: inviteError.message }, 400);
   }
 
-  // Crear perfil directamente con service role (el trigger puede fallar en algunos flujos)
-  const userId = inviteData.user.id;
-  await adminClient.from('profiles').upsert({ id: userId, name, role }, { onConflict: 'id' });
+  // Crear perfil con service role — el trigger puede fallar silenciosamente
+  await adminClient
+    .from('profiles')
+    .upsert({ id: inviteData.user.id, name, role }, { onConflict: 'id' });
 
   return json({ success: true });
 });

@@ -1,23 +1,53 @@
-import { useState, useEffect, type FormEvent } from 'react';
+import { useState, useEffect, useRef, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../shared/contexts/AuthContext';
+import { authClient } from '../../../shared/di';
 import { colors, radius } from '../../../shared/theme';
 
 export function AuthCallbackPage() {
-  const { user, loading: authLoading, updatePassword } = useAuth();
+  const { updatePassword } = useAuth();
   const navigate = useNavigate();
+  const [ready, setReady] = useState(false);
+  // Ref persiste entre los dos mounts de StrictMode, a diferencia del estado
+  const sessionFound = useRef(false);
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  // Supabase procesa el token de invitación del hash automáticamente y establece
-  // la sesión. Una vez que authLoading termina, si no hay usuario = no hay token válido.
   useEffect(() => {
-    if (!authLoading && !user) {
-      navigate('/login', { replace: true });
+    // StrictMode: segundo mount. El ref ya está en true, solo restaurar estado.
+    if (sessionFound.current) {
+      setReady(true);
+      return;
     }
-  }, [authLoading, user, navigate]);
+
+    let alive = true;
+
+    function confirm_session() {
+      if (!alive || sessionFound.current) return;
+      sessionFound.current = true;
+      setReady(true);
+    }
+
+    const unsubscribe = authClient.onAuthStateChange((session) => {
+      if (session) confirm_session();
+    });
+
+    authClient.getSession().then((session) => {
+      if (session) confirm_session();
+    });
+
+    const timer = setTimeout(() => {
+      if (alive && !sessionFound.current) navigate('/login', { replace: true });
+    }, 8000);
+
+    return () => {
+      alive = false;
+      unsubscribe();
+      clearTimeout(timer);
+    };
+  }, [navigate]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -43,7 +73,7 @@ export function AuthCallbackPage() {
     }
   }
 
-  if (authLoading || !user) return null;
+  if (!ready) return null;
 
   return (
     <div

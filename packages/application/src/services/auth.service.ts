@@ -18,4 +18,6 @@ export interface IAuthService {
   inviteUser(email: string, name: string, role: UserRole): Promise<void>;
   /** Actualiza la contraseña del usuario autenticado. Usado en el flujo de primera entrada. */
   updatePassword(newPassword: string): Promise<void>;
+  /** Intercambia un código de autorización (PKCE) por una sesión. Usado en auth callback. */
+  exchangeCodeForSession(code: string): Promise<AuthSession>;
 }

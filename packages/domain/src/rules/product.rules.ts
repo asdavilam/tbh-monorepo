@@ -20,8 +20,8 @@ export function getProductsDueToday(products: Product[], today: Date): Product[]
 
 /**
  * Determina si un producto es visible para un usuario dado.
- * - null en assignedUserId = visible para todos
- * - Con assignedUserId = solo ese usuario (y admins)
+ * - [] en assignedUserIds = visible para todos
+ * - Con assignedUserIds = solo esos usuarios (y admins)
  */
 export function isProductVisibleToUser(
   product: Product,
@@ -29,6 +29,6 @@ export function isProductVisibleToUser(
   isAdmin: boolean
 ): boolean {
   if (isAdmin) return true;
-  if (product.assignedUserId === null) return true;
-  return product.assignedUserId === userId;
+  if (product.assignedUserIds.length === 0) return true;
+  return product.assignedUserIds.includes(userId);
 }

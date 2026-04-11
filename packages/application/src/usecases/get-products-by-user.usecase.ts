@@ -12,7 +12,7 @@ function toProductResponseDto(product: Product): ProductResponseDto {
     countFrequency: product.countFrequency,
     countDays: product.countDays,
     minStock: product.minStock,
-    assignedUserId: product.assignedUserId,
+    assignedUserIds: product.assignedUserIds,
     packageUnit: product.packageUnit,
     packageSize: product.packageSize,
     barcode: product.barcode,

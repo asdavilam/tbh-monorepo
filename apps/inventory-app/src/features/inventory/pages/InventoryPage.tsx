@@ -81,6 +81,224 @@ function VariantGroupHeader({
   );
 }
 
+// ── Completed inventory summary ───────────────────────────────────────────────
+
+function SummaryRow({
+  item,
+  record,
+}: {
+  item: InventoryItemDto;
+  record: InventoryRecordResponseDto;
+}) {
+  const isQualitative = item.unitType === 'qualitative';
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '10px 4px',
+        borderBottom: `1px solid ${colors.border}`,
+        gap: spacing.md,
+      }}
+    >
+      <span
+        style={{
+          fontSize: fontSize.sm,
+          fontWeight: 600,
+          color: colors.text,
+          flex: 1,
+          minWidth: 0,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {item.name}
+      </span>
+      <div style={{ textAlign: 'right', flexShrink: 0 }}>
+        <span
+          style={{
+            fontSize: fontSize.base,
+            fontWeight: 800,
+            color: colors.success,
+            letterSpacing: '-0.01em',
+          }}
+        >
+          {isQualitative ? record.qualitativeValue : record.finalCount}
+        </span>
+        {!isQualitative && (
+          <span
+            style={{
+              fontSize: '11px',
+              color: colors.textMuted,
+              fontWeight: 500,
+              marginLeft: '4px',
+            }}
+          >
+            {item.unitLabel}
+          </span>
+        )}
+        {!isQualitative && record.difference !== null && (
+          <span
+            style={{
+              marginLeft: '6px',
+              fontSize: '11px',
+              fontWeight: 700,
+              color: record.difference < 0 ? colors.danger : colors.success,
+            }}
+          >
+            ({record.difference > 0 ? '+' : ''}
+            {record.difference})
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CompletedView({
+  items,
+  savedRecords,
+  today,
+  canSeeStock,
+  onViewStock,
+}: {
+  items: InventoryItemDto[];
+  savedRecords: Map<string, InventoryRecordResponseDto>;
+  today: string;
+  canSeeStock: boolean;
+  onViewStock: () => void;
+}) {
+  const hasCategories = items.some((item) => item.category);
+
+  const renderSummaryItems = (subset: InventoryItemDto[]) =>
+    subset.map((item) => {
+      const record = savedRecords.get(item.productId);
+      if (!record) return null;
+      return <SummaryRow key={item.productId} item={item} record={record} />;
+    });
+
+  let summaryContent: React.ReactNode;
+  if (!hasCategories) {
+    summaryContent = renderSummaryItems(items);
+  } else {
+    const map = new Map<string, InventoryItemDto[]>();
+    for (const item of items) {
+      const key = item.category?.trim() || '';
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(item);
+    }
+    const groups = Array.from(map.entries())
+      .filter(([k]) => k !== '')
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([label, groupItems]) => ({ label, groupItems }));
+    const uncategorized = map.get('');
+    if (uncategorized?.length) groups.push({ label: 'Sin categoría', groupItems: uncategorized });
+
+    summaryContent = groups.map(({ label, groupItems }) => (
+      <React.Fragment key={label}>
+        <CategoryHeader label={PRODUCT_CATEGORY_LABELS[label as ProductCategory] ?? label} />
+        {renderSummaryItems(groupItems)}
+      </React.Fragment>
+    ));
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      {/* Success banner */}
+      <div
+        style={{
+          backgroundColor: `${colors.success}10`,
+          border: `1px solid ${colors.success}40`,
+          borderRadius: radius.md,
+          padding: '24px 20px',
+          textAlign: 'center',
+        }}
+      >
+        <div
+          style={{
+            width: '56px',
+            height: '56px',
+            borderRadius: '14px',
+            backgroundColor: `${colors.success}18`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 14px',
+            color: colors.success,
+          }}
+        >
+          <svg
+            width="28"
+            height="28"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        </div>
+        <p
+          style={{
+            margin: '0 0 4px',
+            fontSize: fontSize.lg,
+            fontWeight: 800,
+            color: colors.text,
+            letterSpacing: '-0.01em',
+          }}
+        >
+          ¡Conteo completado!
+        </p>
+        <p style={{ margin: 0, fontSize: fontSize.sm, color: colors.textMuted, fontWeight: 500 }}>
+          {today} · {items.length} productos
+        </p>
+      </div>
+
+      {/* Summary list */}
+      <div
+        style={{
+          backgroundColor: colors.surface,
+          borderRadius: radius.md,
+          border: `1px solid ${colors.border}`,
+          padding: '4px 16px 0',
+        }}
+      >
+        {summaryContent}
+      </div>
+
+      {/* CTA para ver stock — solo admin/encargado */}
+      {canSeeStock && (
+        <button
+          onClick={onViewStock}
+          style={{
+            width: '100%',
+            backgroundColor: colors.primary,
+            color: '#fff',
+            border: 'none',
+            borderRadius: radius.md,
+            padding: '16px',
+            fontSize: '14px',
+            fontWeight: 700,
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase',
+            cursor: 'pointer',
+            minHeight: '52px',
+            marginTop: '4px',
+            boxShadow: `0 4px 14px ${colors.primary}33`,
+          }}
+        >
+          Ver stock actual
+        </button>
+      )}
+    </div>
+  );
+}
+
 // ── Render items grouped by parent ────────────────────────────────────────────
 
 function renderInventoryItems(
@@ -168,6 +386,9 @@ export function InventoryPage() {
   const canSeeStock = user.role === 'admin' || user.role === 'encargado';
   const { items, loading, error, reload } = useInventoryToday(user);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+  const [savedRecords, setSavedRecords] = useState<Map<string, InventoryRecordResponseDto>>(
+    new Map()
+  );
   const [filledIds, setFilledIds] = useState<Set<string>>(new Set());
   const [saveTrigger, setSaveTrigger] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
@@ -175,6 +396,7 @@ export function InventoryPage() {
 
   function handleSaved(record: InventoryRecordResponseDto) {
     setSavedIds((prev) => new Set([...prev, record.productId]));
+    setSavedRecords((prev) => new Map([...prev, [record.productId, record]]));
   }
 
   const handleValueChange = useCallback((productId: string, hasValue: boolean) => {
@@ -353,6 +575,14 @@ export function InventoryPage() {
             Regresa mañana o revisa la configuración.
           </p>
         </div>
+      ) : allDone ? (
+        <CompletedView
+          items={items}
+          savedRecords={savedRecords}
+          today={today}
+          canSeeStock={canSeeStock}
+          onViewStock={() => setTab('stock')}
+        />
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {/* Bento stats */}

@@ -1,4 +1,6 @@
-import { useState, useRef, useEffect, useCallback, type FormEvent } from 'react';
+import React, { useState, useRef, useEffect, useCallback, type FormEvent } from 'react';
+import { PRODUCT_CATEGORY_LABELS } from '@tbh/domain';
+import type { ProductCategory } from '@tbh/domain';
 
 const PURCHASE_DRAFT_KEY = 'tbh:draft:purchase';
 
@@ -505,202 +507,107 @@ export function PurchasePage() {
             </p>
           )}
 
-          {filtered.map((product) => {
-            const isSelected = productId === product.id;
-            const productHasPackage = Boolean(product.packageUnit && product.packageSize);
-            const calcQty = productHasPackage ? packageCount * product.packageSize! : null;
+          {(() => {
+            const hasCategories = filtered.some((p) => p.category);
 
-            return (
-              <div key={product.id} ref={isSelected ? selectedCardRef : undefined}>
-                {/* ── Product card (tap to select) ── */}
-                <button
-                  type="button"
-                  onClick={() => handleSelectProduct(product.id)}
-                  aria-expanded={isSelected}
-                  style={{
-                    width: '100%',
-                    padding: '14px 16px',
-                    backgroundColor: isSelected ? colors.primaryLight : colors.surface,
-                    border: `${isSelected ? 2 : 1}px solid ${isSelected ? colors.primary : colors.border}`,
-                    borderBottom: isSelected ? 'none' : undefined,
-                    borderRadius: isSelected ? `${radius.md} ${radius.md} 0 0` : radius.md,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    transition: `background-color ${transition.fast}, border-color ${transition.fast}`,
-                    minHeight: '56px',
-                    gap: '12px',
-                  }}
-                >
-                  <div style={{ minWidth: 0 }}>
-                    <p
-                      style={{
-                        margin: 0,
-                        fontWeight: 700,
-                        fontSize: fontSize.md,
-                        color: isSelected ? colors.primary : colors.text,
-                        letterSpacing: '-0.01em',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                      }}
-                    >
-                      {product.name}
-                    </p>
-                    <p
-                      style={{
-                        margin: '2px 0 0',
-                        fontSize: fontSize.xs,
-                        color: colors.textMuted,
-                        fontWeight: 600,
-                        letterSpacing: '0.06em',
-                        textTransform: 'uppercase',
-                      }}
-                    >
-                      {product.unitLabel || product.unitType}
-                      {product.packageUnit ? ` · ${product.packageUnit}` : ''}
-                    </p>
-                  </div>
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke={isSelected ? colors.primary : colors.textMuted}
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden="true"
-                    style={{
-                      flexShrink: 0,
-                      transform: isSelected ? 'rotate(180deg)' : 'rotate(0deg)',
-                      transition: `transform ${transition.base}`,
-                    }}
-                  >
-                    <polyline points="6 9 12 15 18 9" />
-                  </svg>
-                </button>
+            function renderCard(product: (typeof filtered)[number]) {
+              const isSelected = productId === product.id;
+              const productHasPackage = Boolean(product.packageUnit && product.packageSize);
+              const calcQty = productHasPackage ? packageCount * product.packageSize! : null;
 
-                {/* ── Expanded inline form ── */}
-                {isSelected && (
-                  <form
-                    onSubmit={handleSubmit}
+              return (
+                <div key={product.id} ref={isSelected ? selectedCardRef : undefined}>
+                  {/* ── Product card (tap to select) ── */}
+                  <button
+                    type="button"
+                    onClick={() => handleSelectProduct(product.id)}
+                    aria-expanded={isSelected}
                     style={{
-                      backgroundColor: colors.surfaceLow,
-                      border: `2px solid ${colors.primary}`,
-                      borderTop: 'none',
-                      borderRadius: `0 0 ${radius.md} ${radius.md}`,
-                      padding: '16px',
+                      width: '100%',
+                      padding: '14px 16px',
+                      backgroundColor: isSelected ? colors.primaryLight : colors.surface,
+                      border: `${isSelected ? 2 : 1}px solid ${isSelected ? colors.primary : colors.border}`,
+                      borderBottom: isSelected ? 'none' : undefined,
+                      borderRadius: isSelected ? `${radius.md} ${radius.md} 0 0` : radius.md,
                       display: 'flex',
-                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      transition: `background-color ${transition.fast}, border-color ${transition.fast}`,
+                      minHeight: '56px',
                       gap: '12px',
                     }}
                   >
-                    {/* Quantity — package mode */}
-                    {productHasPackage ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label style={labelStyle}>
-                          EMPAQUES COMPRADOS
-                          <span
-                            style={{
-                              fontWeight: 400,
-                              textTransform: 'none',
-                              marginLeft: '6px',
-                              color: colors.textMuted,
-                            }}
-                          >
-                            ({product.packageUnit})
-                          </span>
-                        </label>
+                    <div style={{ minWidth: 0 }}>
+                      <p
+                        style={{
+                          margin: 0,
+                          fontWeight: 700,
+                          fontSize: fontSize.md,
+                          color: isSelected ? colors.primary : colors.text,
+                          letterSpacing: '-0.01em',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
+                        {product.name}
+                      </p>
+                      <p
+                        style={{
+                          margin: '2px 0 0',
+                          fontSize: fontSize.xs,
+                          color: colors.textMuted,
+                          fontWeight: 600,
+                          letterSpacing: '0.06em',
+                          textTransform: 'uppercase',
+                        }}
+                      >
+                        {product.unitLabel || product.unitType}
+                        {product.packageUnit ? ` · ${product.packageUnit}` : ''}
+                      </p>
+                    </div>
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke={isSelected ? colors.primary : colors.textMuted}
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                      style={{
+                        flexShrink: 0,
+                        transform: isSelected ? 'rotate(180deg)' : 'rotate(0deg)',
+                        transition: `transform ${transition.base}`,
+                      }}
+                    >
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                  </button>
 
-                        {/* Quick count buttons */}
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                          {QUICK_COUNTS.map((n) => (
-                            <button
-                              key={n}
-                              type="button"
-                              onClick={() => setPackageCount(n)}
-                              style={{
-                                flex: 1,
-                                height: '48px',
-                                borderRadius: radius.sm,
-                                border: `2px solid ${packageCount === n ? colors.primary : colors.border}`,
-                                backgroundColor:
-                                  packageCount === n ? colors.primaryLight : colors.surface,
-                                color: packageCount === n ? colors.primary : colors.text,
-                                fontSize: '18px',
-                                fontWeight: 700,
-                                cursor: 'pointer',
-                                transition: `all ${transition.fast}`,
-                              }}
-                            >
-                              {n}
-                            </button>
-                          ))}
-                        </div>
-
-                        {/* Stepper for larger amounts */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          <button
-                            type="button"
-                            onClick={() => setPackageCount((c) => Math.max(1, c - 1))}
-                            style={stepperBtn}
-                            aria-label="Reducir cantidad"
-                          >
-                            −
-                          </button>
-                          <span
-                            style={{
-                              flex: 1,
-                              textAlign: 'center',
-                              fontSize: '28px',
-                              fontWeight: 900,
-                              color: colors.text,
-                            }}
-                          >
-                            {packageCount}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => setPackageCount((c) => c + 1)}
-                            style={stepperBtn}
-                            aria-label="Aumentar cantidad"
-                          >
-                            +
-                          </button>
-                        </div>
-
-                        {/* Conversion preview */}
-                        <div
-                          style={{
-                            backgroundColor: colors.surface,
-                            border: `1px solid ${colors.border}`,
-                            borderRadius: radius.sm,
-                            padding: '10px 14px',
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                          }}
-                        >
-                          <span style={{ fontSize: '13px', color: colors.textMuted }}>
-                            {packageCount} {product.packageUnit} × {product.packageSize}{' '}
-                            {product.unitLabel}
-                          </span>
-                          <span
-                            style={{ fontSize: '18px', fontWeight: 900, color: colors.primary }}
-                          >
-                            = {calcQty} {product.unitLabel}
-                          </span>
-                        </div>
-                      </div>
-                    ) : (
-                      /* Quantity — manual mode */
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label style={labelStyle}>
-                          CANTIDAD
-                          {product.unitLabel && (
+                  {/* ── Expanded inline form ── */}
+                  {isSelected && (
+                    <form
+                      onSubmit={handleSubmit}
+                      style={{
+                        backgroundColor: colors.surfaceLow,
+                        border: `2px solid ${colors.primary}`,
+                        borderTop: 'none',
+                        borderRadius: `0 0 ${radius.md} ${radius.md}`,
+                        padding: '16px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '12px',
+                      }}
+                    >
+                      {/* Quantity — package mode */}
+                      {productHasPackage ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <label style={labelStyle}>
+                            EMPAQUES COMPRADOS
                             <span
                               style={{
                                 fontWeight: 400,
@@ -709,88 +616,224 @@ export function PurchasePage() {
                                 color: colors.textMuted,
                               }}
                             >
-                              ({product.unitLabel})
+                              ({product.packageUnit})
                             </span>
-                          )}
+                          </label>
+
+                          {/* Quick count buttons */}
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            {QUICK_COUNTS.map((n) => (
+                              <button
+                                key={n}
+                                type="button"
+                                onClick={() => setPackageCount(n)}
+                                style={{
+                                  flex: 1,
+                                  height: '48px',
+                                  borderRadius: radius.sm,
+                                  border: `2px solid ${packageCount === n ? colors.primary : colors.border}`,
+                                  backgroundColor:
+                                    packageCount === n ? colors.primaryLight : colors.surface,
+                                  color: packageCount === n ? colors.primary : colors.text,
+                                  fontSize: '18px',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  transition: `all ${transition.fast}`,
+                                }}
+                              >
+                                {n}
+                              </button>
+                            ))}
+                          </div>
+
+                          {/* Stepper for larger amounts */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <button
+                              type="button"
+                              onClick={() => setPackageCount((c) => Math.max(1, c - 1))}
+                              style={stepperBtn}
+                              aria-label="Reducir cantidad"
+                            >
+                              −
+                            </button>
+                            <span
+                              style={{
+                                flex: 1,
+                                textAlign: 'center',
+                                fontSize: '28px',
+                                fontWeight: 900,
+                                color: colors.text,
+                              }}
+                            >
+                              {packageCount}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setPackageCount((c) => c + 1)}
+                              style={stepperBtn}
+                              aria-label="Aumentar cantidad"
+                            >
+                              +
+                            </button>
+                          </div>
+
+                          {/* Conversion preview */}
+                          <div
+                            style={{
+                              backgroundColor: colors.surface,
+                              border: `1px solid ${colors.border}`,
+                              borderRadius: radius.sm,
+                              padding: '10px 14px',
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                            }}
+                          >
+                            <span style={{ fontSize: '13px', color: colors.textMuted }}>
+                              {packageCount} {product.packageUnit} × {product.packageSize}{' '}
+                              {product.unitLabel}
+                            </span>
+                            <span
+                              style={{ fontSize: '18px', fontWeight: 900, color: colors.primary }}
+                            >
+                              = {calcQty} {product.unitLabel}
+                            </span>
+                          </div>
+                        </div>
+                      ) : (
+                        /* Quantity — manual mode */
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <label style={labelStyle}>
+                            CANTIDAD
+                            {product.unitLabel && (
+                              <span
+                                style={{
+                                  fontWeight: 400,
+                                  textTransform: 'none',
+                                  marginLeft: '6px',
+                                  color: colors.textMuted,
+                                }}
+                              >
+                                ({product.unitLabel})
+                              </span>
+                            )}
+                          </label>
+                          <input
+                            type="number"
+                            min="0.01"
+                            step="any"
+                            value={quantity}
+                            onChange={(e) => setQuantity(e.target.value)}
+                            required
+                            placeholder="0"
+                            inputMode="decimal"
+                            style={inputStyle}
+                          />
+                        </div>
+                      )}
+
+                      {/* Notes */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <label style={labelStyle}>
+                          NOTAS{' '}
+                          <span style={{ fontWeight: 400, textTransform: 'none' }}>(opcional)</span>
                         </label>
                         <input
-                          type="number"
-                          min="0.01"
-                          step="any"
-                          value={quantity}
-                          onChange={(e) => setQuantity(e.target.value)}
-                          required
-                          placeholder="0"
-                          inputMode="decimal"
+                          type="text"
+                          value={notes}
+                          onChange={(e) => setNotes(e.target.value)}
+                          placeholder="Ej: compra de emergencia"
                           style={inputStyle}
                         />
                       </div>
-                    )}
 
-                    {/* Notes */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <label style={labelStyle}>
-                        NOTAS{' '}
-                        <span style={{ fontWeight: 400, textTransform: 'none' }}>(opcional)</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={notes}
-                        onChange={(e) => setNotes(e.target.value)}
-                        placeholder="Ej: compra de emergencia"
-                        style={inputStyle}
-                      />
-                    </div>
+                      {error && (
+                        <div
+                          style={{
+                            backgroundColor: colors.dangerLight,
+                            color: colors.danger,
+                            padding: '10px 12px',
+                            borderRadius: radius.sm,
+                            fontSize: fontSize.sm,
+                            fontWeight: 500,
+                          }}
+                        >
+                          {error}
+                        </div>
+                      )}
 
-                    {error && (
-                      <div
+                      <button
+                        type="submit"
+                        disabled={saving || (!productHasPackage && !quantity)}
                         style={{
-                          backgroundColor: colors.dangerLight,
-                          color: colors.danger,
-                          padding: '10px 12px',
+                          width: '100%',
+                          height: '48px',
+                          backgroundColor:
+                            saving || (!productHasPackage && !quantity)
+                              ? colors.border
+                              : colors.primary,
+                          color:
+                            saving || (!productHasPackage && !quantity) ? colors.textMuted : '#fff',
+                          border: 'none',
                           borderRadius: radius.sm,
-                          fontSize: fontSize.sm,
-                          fontWeight: 500,
+                          fontSize: '14px',
+                          fontWeight: 700,
+                          letterSpacing: '0.06em',
+                          textTransform: 'uppercase',
+                          cursor:
+                            saving || (!productHasPackage && !quantity) ? 'not-allowed' : 'pointer',
+                          boxShadow:
+                            saving || (!productHasPackage && !quantity)
+                              ? 'none'
+                              : `0 4px 12px ${colors.primary}33`,
+                          transition: `background-color ${transition.fast}`,
                         }}
                       >
-                        {error}
-                      </div>
-                    )}
+                        {saving ? 'Guardando...' : 'Registrar Compra'}
+                      </button>
+                    </form>
+                  )}
+                </div>
+              );
+            }
 
-                    <button
-                      type="submit"
-                      disabled={saving || (!productHasPackage && !quantity)}
-                      style={{
-                        width: '100%',
-                        height: '48px',
-                        backgroundColor:
-                          saving || (!productHasPackage && !quantity)
-                            ? colors.border
-                            : colors.primary,
-                        color:
-                          saving || (!productHasPackage && !quantity) ? colors.textMuted : '#fff',
-                        border: 'none',
-                        borderRadius: radius.sm,
-                        fontSize: '14px',
-                        fontWeight: 700,
-                        letterSpacing: '0.06em',
-                        textTransform: 'uppercase',
-                        cursor:
-                          saving || (!productHasPackage && !quantity) ? 'not-allowed' : 'pointer',
-                        boxShadow:
-                          saving || (!productHasPackage && !quantity)
-                            ? 'none'
-                            : `0 4px 12px ${colors.primary}33`,
-                        transition: `background-color ${transition.fast}`,
-                      }}
-                    >
-                      {saving ? 'Guardando...' : 'Registrar Compra'}
-                    </button>
-                  </form>
-                )}
-              </div>
-            );
-          })}
+            if (!hasCategories) return filtered.map(renderCard);
+
+            const map = new Map<string, typeof filtered>();
+            for (const p of filtered) {
+              const key = p.category?.trim() || '';
+              if (!map.has(key)) map.set(key, []);
+              map.get(key)!.push(p);
+            }
+            const groups = Array.from(map.entries())
+              .filter(([k]) => k !== '')
+              .sort(([a], [b]) => a.localeCompare(b))
+              .map(([key, items]) => ({ key, items }));
+            const uncategorized = map.get('');
+            if (uncategorized?.length) groups.push({ key: 'uncategorized', items: uncategorized });
+
+            return groups.map(({ key, items }) => (
+              <React.Fragment key={key}>
+                <div
+                  style={{
+                    fontSize: '10px',
+                    fontWeight: 800,
+                    letterSpacing: '0.1em',
+                    textTransform: 'uppercase',
+                    color: colors.textMuted,
+                    padding: '12px 2px 6px',
+                    borderBottom: `1px solid ${colors.border}`,
+                    marginBottom: '4px',
+                  }}
+                >
+                  {key === 'uncategorized'
+                    ? 'Sin categoría'
+                    : (PRODUCT_CATEGORY_LABELS[key as ProductCategory] ?? key)}
+                </div>
+                {items.map(renderCard)}
+              </React.Fragment>
+            ));
+          })()}
         </div>
 
         <div style={{ height: '1px', backgroundColor: colors.border }} />

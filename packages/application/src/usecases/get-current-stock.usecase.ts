@@ -103,6 +103,7 @@ export class GetCurrentStockUseCase {
           packageSize: product.packageSize,
           parentProductId: product.parentProductId,
           isVariantContainer: isContainer,
+          category: product.category,
         };
       })
     );

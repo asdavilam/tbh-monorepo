@@ -1,4 +1,10 @@
-import type { QualitativeValue, ProductType, UnitType, UserRole } from '@tbh/domain';
+import type {
+  QualitativeValue,
+  ProductType,
+  UnitType,
+  UserRole,
+  ProductCategory,
+} from '@tbh/domain';
 
 export interface StockItemDto {
   productId: string;
@@ -21,6 +27,8 @@ export interface StockItemDto {
   parentProductId: string | null;
   /** true si este producto es un contenedor de variantes (no se cuenta directamente) */
   isVariantContainer: boolean;
+  /** Categoría del producto para agrupación en UI */
+  category: ProductCategory | null;
 }
 
 export interface CorrectStockDto {
@@ -99,4 +107,6 @@ export interface InventoryItemDto {
   parentProductId: string | null;
   /** Nombre del producto padre si es variante. Null si es independiente. */
   parentName: string | null;
+  /** Categoría del producto para agrupación en UI */
+  category: ProductCategory | null;
 }

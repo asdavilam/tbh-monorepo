@@ -1,7 +1,19 @@
 import { useState, useEffect, type FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import type { ProductType, UnitType, CountFrequency, DayOfWeek } from '@tbh/domain';
-import { PRODUCT_TYPE_LABELS, UNIT_TYPE_LABELS, DAY_OF_WEEK_LABELS } from '@tbh/domain';
+import type {
+  ProductType,
+  UnitType,
+  CountFrequency,
+  DayOfWeek,
+  ProductCategory,
+} from '@tbh/domain';
+import {
+  PRODUCT_TYPE_LABELS,
+  UNIT_TYPE_LABELS,
+  DAY_OF_WEEK_LABELS,
+  PRODUCT_CATEGORIES,
+  PRODUCT_CATEGORY_LABELS,
+} from '@tbh/domain';
 import type { ProductResponseDto, UserResponseDto } from '@tbh/application';
 import {
   createProduct,
@@ -37,6 +49,7 @@ interface FormState {
   packageUnit: string;
   packageSize: string;
   barcode: string;
+  category: ProductCategory | '';
 }
 
 const EMPTY_FORM: FormState = {
@@ -51,6 +64,7 @@ const EMPTY_FORM: FormState = {
   packageUnit: '',
   packageSize: '',
   barcode: '',
+  category: '',
 };
 
 export function ProductFormPage() {
@@ -101,6 +115,7 @@ export function ProductFormPage() {
           packageUnit: product.packageUnit ?? '',
           packageSize: product.packageSize !== null ? String(product.packageSize) : '',
           barcode: product.barcode ?? '',
+          category: product.category ?? '',
         });
         // Load existing variants
         setVariants(products.filter((p) => p.parentProductId === id));
@@ -208,6 +223,7 @@ export function ProductFormPage() {
           packageUnit: form.packageUnit || null,
           packageSize: packageSizeValue,
           barcode: form.barcode || null,
+          category: form.category || null,
         });
       } else {
         await createProduct.execute(user.id, {
@@ -222,6 +238,7 @@ export function ProductFormPage() {
           packageUnit: form.packageUnit || null,
           packageSize: packageSizeValue,
           barcode: form.barcode || null,
+          category: form.category || null,
         });
       }
       navigate('/productos');
@@ -260,6 +277,30 @@ export function ProductFormPage() {
             placeholder="Ej: Carne de res"
             style={inputStyle}
           />
+        </div>
+
+        {/* Categoría */}
+        <div style={fieldGroup}>
+          <label style={labelStyle}>
+            CATEGORÍA{' '}
+            <span style={{ color: colors.textMuted, fontWeight: 400, textTransform: 'none' }}>
+              (opcional)
+            </span>
+          </label>
+          <select
+            value={form.category}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, category: e.target.value as ProductCategory | '' }))
+            }
+            style={selectStyle}
+          >
+            <option value="">Sin categoría</option>
+            {PRODUCT_CATEGORIES.map((cat) => (
+              <option key={cat} value={cat}>
+                {PRODUCT_CATEGORY_LABELS[cat]}
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* Tipo de producto */}

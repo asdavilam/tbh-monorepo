@@ -12,7 +12,7 @@ function toDto(product: Product): ProductResponseDto {
     countFrequency: product.countFrequency,
     countDays: product.countDays,
     minStock: product.minStock,
-    assignedUserId: product.assignedUserId,
+    assignedUserIds: product.assignedUserIds,
     packageUnit: product.packageUnit,
     packageSize: product.packageSize,
     barcode: product.barcode,
@@ -46,8 +46,8 @@ export class UpdateProductUseCase {
       countFrequency: dto.countFrequency ?? existing.countFrequency,
       countDays: dto.countDays ?? existing.countDays,
       minStock: dto.minStock !== undefined ? dto.minStock : existing.minStock,
-      assignedUserId:
-        dto.assignedUserId !== undefined ? dto.assignedUserId : existing.assignedUserId,
+      assignedUserIds:
+        dto.assignedUserIds !== undefined ? dto.assignedUserIds : existing.assignedUserIds,
       packageUnit: dto.packageUnit !== undefined ? dto.packageUnit : existing.packageUnit,
       packageSize: dto.packageSize !== undefined ? dto.packageSize : existing.packageSize,
       barcode:

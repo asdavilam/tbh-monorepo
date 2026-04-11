@@ -21,10 +21,9 @@ const QUALITATIVE_OPTIONS: { value: QualitativeValue; label: string; color: stri
 ];
 
 const FRACTION_OPTIONS = [
-  { label: '1/4', value: 0.25 },
-  { label: '1/2', value: 0.5 },
-  { label: '3/4', value: 0.75 },
-  { label: '1', value: 1 },
+  { label: '¼', value: 0.25 },
+  { label: '½', value: 0.5 },
+  { label: '¾', value: 0.75 },
 ];
 
 function humanizeError(err: unknown): string {
@@ -89,6 +88,8 @@ export function CountCard({
   triggerSave,
   autoFocus = false,
 }: CountCardProps) {
+  const isFractionWithPackage = item.unitType === 'fraction' && !!item.packageSize;
+
   const draft = loadDraft(item.productId);
 
   const [finalCount, setFinalCount] = useState(draft?.finalCount ?? '');
@@ -100,8 +101,40 @@ export function CountCard({
   const [error, setError] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Fraction+package state: integer units + fractional part
+  const [wholeUnits, setWholeUnits] = useState<number>(() => {
+    if (!isFractionWithPackage || !item.packageSize) return 0;
+    const d = loadDraft(item.productId);
+    if (!d?.finalCount) return 0;
+    return Math.floor(parseFloat(d.finalCount) / item.packageSize);
+  });
+  const [fractionPart, setFractionPart] = useState<number>(() => {
+    if (!isFractionWithPackage || !item.packageSize) return 0;
+    const d = loadDraft(item.productId);
+    if (!d?.finalCount) return 0;
+    const total = parseFloat(d.finalCount);
+    const whole = Math.floor(total / item.packageSize);
+    const rem = total - whole * item.packageSize;
+    return Math.round((rem / item.packageSize) * 4) / 4;
+  });
+  const [fractionTouched, setFractionTouched] = useState<boolean>(() => {
+    if (!isFractionWithPackage) return false;
+    const d = loadDraft(item.productId);
+    return !!d?.finalCount;
+  });
+
+  // Sync whole+fraction → finalCount whenever the fraction counter changes
+  useEffect(() => {
+    if (!isFractionWithPackage || !item.packageSize || !fractionTouched) return;
+    setFinalCount(String((wholeUnits + fractionPart) * item.packageSize));
+  }, [wholeUnits, fractionPart, fractionTouched, isFractionWithPackage, item.packageSize]);
+
   const isQualitative = item.unitType === 'qualitative';
-  const canSave = isQualitative ? qualitativeValue !== null : finalCount !== '';
+  const canSave = isQualitative
+    ? qualitativeValue !== null
+    : isFractionWithPackage
+      ? fractionTouched
+      : finalCount !== '';
 
   useEffect(() => {
     if (autoFocus && !isQualitative && inputRef.current) {
@@ -150,9 +183,13 @@ export function CountCard({
 
   // Reportar al padre si este campo tiene valor (incluye estado inicial de borrador)
   useEffect(() => {
-    const hasValue = isQualitative ? qualitativeValue !== null : finalCount !== '';
+    const hasValue = isQualitative
+      ? qualitativeValue !== null
+      : isFractionWithPackage
+        ? fractionTouched
+        : finalCount !== '';
     onValueChange(item.productId, hasValue);
-  }, [finalCount, qualitativeValue]); // intentionally omit onValueChange (stable ref)
+  }, [finalCount, qualitativeValue, fractionTouched]); // intentionally omit onValueChange (stable ref)
 
   // Ref para evitar stale closures al reaccionar al triggerSave del padre
   const saveStateRef = useRef({ handleSave, canSave, savedRecord, saving });
@@ -351,84 +388,164 @@ export function CountCard({
               </button>
             ))}
           </div>
-        ) : (
+        ) : isFractionWithPackage ? (
+          /* Fracción con empaque: contador entero + selector de fracción */
           <div
             style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end' }}
           >
-            {/* Botones de fracción — solo cuando el producto tiene packageSize */}
-            {item.unitType === 'fraction' && item.packageSize && (
-              <div style={{ display: 'flex', gap: '6px' }}>
-                {FRACTION_OPTIONS.map((opt) => {
-                  const val = String(opt.value * item.packageSize!);
-                  const active = finalCount === val;
-                  return (
-                    <button
-                      key={opt.label}
-                      type="button"
-                      onClick={() => setFinalCount(val)}
-                      style={{
-                        padding: '6px 10px',
-                        minHeight: '40px',
-                        minWidth: '44px',
-                        borderRadius: radius.sm,
-                        border: `2px solid ${active ? colors.primary : colors.border}`,
-                        backgroundColor: active ? colors.primaryLight : 'transparent',
-                        color: active ? colors.primary : colors.textMuted,
-                        fontSize: '13px',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      {opt.label}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-            {/* Input numérico */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <input
-                ref={inputRef}
-                type="number"
-                min="0"
-                step="any"
-                value={finalCount}
-                onChange={(e) => setFinalCount(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="00"
-                inputMode="decimal"
-                style={{
-                  width: '80px',
-                  backgroundColor: isActive ? colors.surfaceHigh : colors.surfaceLow,
-                  border: 0,
-                  textAlign: 'right',
-                  fontWeight: 900,
-                  fontSize: '24px',
-                  padding: '8px 12px',
-                  borderRadius: '10px',
-                  color: finalCount ? colors.success : colors.text,
-                  outline: 'none',
-                  minHeight: '48px',
-                  boxSizing: 'border-box',
+            {/* Contador de enteros */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setFractionTouched(true);
+                  setWholeUnits((w) => Math.max(0, w - 1));
                 }}
-              />
-              {finalCount && liveDifference !== null && (
-                <span
-                  style={{
-                    fontSize: '11px',
-                    fontWeight: 700,
-                    color: liveDifference < 0 ? colors.danger : colors.success,
-                  }}
-                >
-                  {liveDifference > 0 ? '+' : ''}
-                  {liveDifference}
-                </span>
-              )}
+                disabled={wholeUnits === 0}
+                style={{
+                  width: '44px',
+                  height: '44px',
+                  borderRadius: radius.sm,
+                  border: `2px solid ${wholeUnits === 0 ? colors.border : colors.primary}`,
+                  backgroundColor: wholeUnits === 0 ? 'transparent' : colors.primaryLight,
+                  color: wholeUnits === 0 ? colors.border : colors.primary,
+                  fontSize: '22px',
+                  fontWeight: 700,
+                  cursor: wholeUnits === 0 ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  lineHeight: 1,
+                }}
+              >
+                −
+              </button>
+              <span
+                style={{
+                  fontSize: '28px',
+                  fontWeight: 900,
+                  minWidth: '32px',
+                  textAlign: 'center',
+                  letterSpacing: '-0.02em',
+                  color: fractionTouched ? colors.text : colors.border,
+                  lineHeight: 1,
+                }}
+              >
+                {fractionTouched ? wholeUnits : '–'}
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setFractionTouched(true);
+                  setWholeUnits((w) => w + 1);
+                }}
+                style={{
+                  width: '44px',
+                  height: '44px',
+                  borderRadius: radius.sm,
+                  border: `2px solid ${colors.primary}`,
+                  backgroundColor: colors.primaryLight,
+                  color: colors.primary,
+                  fontSize: '22px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  lineHeight: 1,
+                }}
+              >
+                +
+              </button>
             </div>
-            {/* Etiqueta de conversión cuando se usa fracción */}
-            {item.unitType === 'fraction' && item.packageSize && finalCount && (
+            {/* Botones de fracción parcial */}
+            <div style={{ display: 'flex', gap: '6px' }}>
+              {FRACTION_OPTIONS.map((opt) => {
+                const active = fractionPart === opt.value;
+                return (
+                  <button
+                    key={opt.label}
+                    type="button"
+                    onClick={() => {
+                      setFractionTouched(true);
+                      setFractionPart(active ? 0 : opt.value);
+                    }}
+                    style={{
+                      padding: '6px 10px',
+                      minHeight: '40px',
+                      minWidth: '44px',
+                      borderRadius: radius.sm,
+                      border: `2px solid ${active ? colors.primary : colors.border}`,
+                      backgroundColor: active ? colors.primaryLight : 'transparent',
+                      color: active ? colors.primary : colors.textMuted,
+                      fontSize: '14px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      transition: `all ${transition.fast}`,
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+            {/* Total calculado */}
+            {fractionTouched && (
               <span style={{ fontSize: '11px', color: colors.textMuted, fontWeight: 600 }}>
-                = {finalCount} {item.unitLabel}
+                = {(wholeUnits + fractionPart) * item.packageSize!} {item.unitLabel}
+                {liveDifference !== null && (
+                  <span
+                    style={{
+                      marginLeft: '6px',
+                      color: liveDifference < 0 ? colors.danger : colors.success,
+                      fontWeight: 700,
+                    }}
+                  >
+                    ({liveDifference > 0 ? '+' : ''}
+                    {liveDifference})
+                  </span>
+                )}
+              </span>
+            )}
+          </div>
+        ) : (
+          /* Input numérico para tipo unit */
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <input
+              ref={inputRef}
+              type="number"
+              min="0"
+              step="any"
+              value={finalCount}
+              onChange={(e) => setFinalCount(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="00"
+              inputMode="decimal"
+              style={{
+                width: '80px',
+                backgroundColor: isActive ? colors.surfaceHigh : colors.surfaceLow,
+                border: 0,
+                textAlign: 'right',
+                fontWeight: 900,
+                fontSize: '24px',
+                padding: '8px 12px',
+                borderRadius: '10px',
+                color: finalCount ? colors.success : colors.text,
+                outline: 'none',
+                minHeight: '48px',
+                boxSizing: 'border-box',
+              }}
+            />
+            {finalCount && liveDifference !== null && (
+              <span
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  color: liveDifference < 0 ? colors.danger : colors.success,
+                }}
+              >
+                {liveDifference > 0 ? '+' : ''}
+                {liveDifference}
               </span>
             )}
           </div>

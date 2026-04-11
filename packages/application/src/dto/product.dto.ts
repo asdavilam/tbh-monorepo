@@ -15,7 +15,7 @@ export interface CreateProductDto {
   countFrequency: CountFrequency;
   countDays: DayOfWeek[];
   minStock: number | null;
-  assignedUserId: string | null;
+  assignedUserIds: string[];
   packageUnit: string | null;
   packageSize: number | null;
   barcode: string | null;
@@ -32,7 +32,7 @@ export interface UpdateProductDto {
   countFrequency?: CountFrequency;
   countDays?: DayOfWeek[];
   minStock?: number | null;
-  assignedUserId?: string | null;
+  assignedUserIds?: string[];
   packageUnit?: string | null;
   packageSize?: number | null;
   barcode?: string | null;
@@ -49,7 +49,7 @@ export interface ProductResponseDto {
   countFrequency: CountFrequency;
   countDays: DayOfWeek[];
   minStock: number | null;
-  assignedUserId: string | null;
+  assignedUserIds: string[];
   packageUnit: string | null;
   packageSize: number | null;
   barcode: string | null;

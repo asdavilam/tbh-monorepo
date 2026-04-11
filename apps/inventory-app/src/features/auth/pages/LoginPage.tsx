@@ -264,7 +264,7 @@ export function LoginPage() {
             textTransform: 'uppercase',
           }}
         >
-          Inventory System v1.0
+          Inventory System v1.2
         </p>
       </div>
     </div>

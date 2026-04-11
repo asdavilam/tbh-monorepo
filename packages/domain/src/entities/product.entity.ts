@@ -1,4 +1,10 @@
-import type { ProductType, UnitType, CountFrequency, DayOfWeek } from '../value-objects';
+import type {
+  ProductType,
+  UnitType,
+  CountFrequency,
+  DayOfWeek,
+  ProductCategory,
+} from '../value-objects';
 
 export interface Product {
   id: string;
@@ -20,6 +26,8 @@ export interface Product {
   packageSize: number | null;
   /** Código de barras para identificación rápida */
   barcode: string | null;
+  /** Categoría para agrupar productos. Valores predefinidos en ProductCategory. */
+  category: ProductCategory | null;
   /** Producto padre — null si es independiente o contenedor de variantes */
   parentProductId: string | null;
   createdAt: Date;

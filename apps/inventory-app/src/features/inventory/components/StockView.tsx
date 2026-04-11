@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import type { StockItemDto } from '@tbh/application';
-import type { QualitativeValue } from '@tbh/domain';
+import type { QualitativeValue, ProductCategory } from '@tbh/domain';
+import { PRODUCT_CATEGORY_LABELS } from '@tbh/domain';
 import { getCurrentStock, correctStock } from '../../../shared/di';
 import { useAuth } from '../../../shared/contexts/AuthContext';
 import { colors, fontSize, radius, spacing, transition } from '../../../shared/theme';
@@ -504,74 +505,112 @@ export function StockView() {
         )}
       </div>
 
-      {items.map((item) => {
-        if (item.isVariantContainer) {
-          return (
-            <div key={item.productId}>
-              {/* Container header row — non-clickable, shows sum */}
+      {(() => {
+        function renderItems(groupItems: typeof items) {
+          return groupItems.map((item) => {
+            if (item.isVariantContainer) {
+              return (
+                <div key={item.productId}>
+                  <div
+                    style={{
+                      padding: '10px 16px 6px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '8px',
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: '11px',
+                        fontWeight: 800,
+                        letterSpacing: '0.08em',
+                        textTransform: 'uppercase',
+                        color: colors.primary,
+                      }}
+                    >
+                      {item.name}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: fontSize.sm,
+                        fontWeight: 700,
+                        color: colors.textMuted,
+                        backgroundColor: colors.surfaceLow,
+                        padding: '2px 10px',
+                        borderRadius: '999px',
+                      }}
+                    >
+                      Total:{' '}
+                      {item.currentStock !== null ? `${item.currentStock} ${item.unitLabel}` : '—'}
+                    </span>
+                  </div>
+                </div>
+              );
+            }
+            const isVariant = item.parentProductId !== null;
+            return (
               <div
-                style={{
-                  padding: '10px 16px 6px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '8px',
-                }}
+                key={item.productId}
+                style={
+                  isVariant
+                    ? {
+                        paddingLeft: '12px',
+                        borderLeft: `3px solid ${colors.border}`,
+                        marginLeft: '8px',
+                      }
+                    : undefined
+                }
               >
-                <span
-                  style={{
-                    fontSize: '11px',
-                    fontWeight: 800,
-                    letterSpacing: '0.08em',
-                    textTransform: 'uppercase',
-                    color: colors.primary,
-                  }}
-                >
-                  {item.name}
-                </span>
-                <span
-                  style={{
-                    fontSize: fontSize.sm,
-                    fontWeight: 700,
-                    color: colors.textMuted,
-                    backgroundColor: colors.surfaceLow,
-                    padding: '2px 10px',
-                    borderRadius: '999px',
-                  }}
-                >
-                  Total:{' '}
-                  {item.currentStock !== null ? `${item.currentStock} ${item.unitLabel}` : '—'}
-                </span>
+                <StockCard
+                  item={item}
+                  isAdmin={adminUser}
+                  expanded={expandedId === item.productId}
+                  onToggle={() => handleToggle(item.productId)}
+                  onSaved={(updated) => handleSaved(item.productId, updated)}
+                />
               </div>
-            </div>
-          );
+            );
+          });
         }
 
-        // Variant or standalone
-        const isVariant = item.parentProductId !== null;
-        return (
-          <div
-            key={item.productId}
-            style={
-              isVariant
-                ? {
-                    paddingLeft: '12px',
-                    borderLeft: `3px solid ${colors.border}`,
-                    marginLeft: '8px',
-                  }
-                : undefined
-            }
-          >
-            <StockCard
-              item={item}
-              isAdmin={adminUser}
-              expanded={expandedId === item.productId}
-              onToggle={() => handleToggle(item.productId)}
-              onSaved={(updated) => handleSaved(item.productId, updated)}
-            />
-          </div>
-        );
-      })}
+        const hasCategories = items.some((i) => i.category);
+        if (!hasCategories) return renderItems(items);
+
+        const map = new Map<string, typeof items>();
+        for (const item of items) {
+          const key = item.category?.trim() || '';
+          if (!map.has(key)) map.set(key, []);
+          map.get(key)!.push(item);
+        }
+        const groups = Array.from(map.entries())
+          .filter(([k]) => k !== '')
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([label, groupItems]) => ({ label, groupItems }));
+        const uncategorized = map.get('');
+        if (uncategorized?.length)
+          groups.push({ label: 'Sin categoría', groupItems: uncategorized });
+
+        return groups.map(({ label, groupItems }) => (
+          <React.Fragment key={label}>
+            <div
+              style={{
+                fontSize: '10px',
+                fontWeight: 800,
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+                color: colors.textMuted,
+                padding: '12px 2px 6px',
+                borderBottom: `1px solid ${colors.border}`,
+                marginBottom: '4px',
+              }}
+            >
+              {PRODUCT_CATEGORY_LABELS[label as ProductCategory] ?? label}
+            </div>
+            {renderItems(groupItems)}
+          </React.Fragment>
+        ));
+      })()}
     </div>
   );
 }

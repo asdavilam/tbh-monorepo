@@ -16,6 +16,7 @@ function toDto(product: Product): ProductResponseDto {
     packageUnit: product.packageUnit,
     packageSize: product.packageSize,
     barcode: product.barcode,
+    category: product.category,
     parentProductId: product.parentProductId,
     createdAt: product.createdAt.toISOString(),
     updatedAt: product.updatedAt.toISOString(),
@@ -51,6 +52,7 @@ export class UpdateProductUseCase {
       packageSize: dto.packageSize !== undefined ? dto.packageSize : existing.packageSize,
       barcode:
         dto.barcode !== undefined ? (dto.barcode ? dto.barcode.trim() : null) : existing.barcode,
+      category: dto.category !== undefined ? dto.category : existing.category,
       parentProductId:
         dto.parentProductId !== undefined ? dto.parentProductId : existing.parentProductId,
     });

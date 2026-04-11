@@ -80,6 +80,7 @@ export class GetInventoryForTodayUseCase {
           parentName: product.parentProductId
             ? (productNameById.get(product.parentProductId) ?? null)
             : null,
+          category: product.category,
         };
       })
     );

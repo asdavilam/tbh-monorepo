@@ -16,6 +16,7 @@ function toProductResponseDto(product: Product): ProductResponseDto {
     packageUnit: product.packageUnit,
     packageSize: product.packageSize,
     barcode: product.barcode,
+    category: product.category,
     parentProductId: product.parentProductId,
     createdAt: product.createdAt.toISOString(),
     updatedAt: product.updatedAt.toISOString(),

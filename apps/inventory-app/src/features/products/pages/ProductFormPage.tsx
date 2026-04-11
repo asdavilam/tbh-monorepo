@@ -45,7 +45,7 @@ interface FormState {
   countFrequency: CountFrequency;
   countDays: DayOfWeek[];
   minStock: string;
-  assignedUserId: string;
+  assignedUserIds: string[];
   packageUnit: string;
   packageSize: string;
   barcode: string;
@@ -60,7 +60,7 @@ const EMPTY_FORM: FormState = {
   countFrequency: 'daily',
   countDays: [],
   minStock: '',
-  assignedUserId: '',
+  assignedUserIds: [],
   packageUnit: '',
   packageSize: '',
   barcode: '',
@@ -111,7 +111,7 @@ export function ProductFormPage() {
           countFrequency: product.countFrequency,
           countDays: product.countDays,
           minStock: product.minStock !== null ? String(product.minStock) : '',
-          assignedUserId: product.assignedUserId ?? '',
+          assignedUserIds: product.assignedUserIds ?? [],
           packageUnit: product.packageUnit ?? '',
           packageSize: product.packageSize !== null ? String(product.packageSize) : '',
           barcode: product.barcode ?? '',
@@ -158,7 +158,7 @@ export function ProductFormPage() {
         countFrequency: form.countFrequency,
         countDays: form.countDays,
         minStock: null,
-        assignedUserId: form.assignedUserId || null,
+        assignedUserIds: form.assignedUserIds,
         packageUnit: null,
         packageSize: null,
         barcode: null,
@@ -219,7 +219,7 @@ export function ProductFormPage() {
           countFrequency: form.countFrequency,
           countDays: form.countDays,
           minStock: minStockValue,
-          assignedUserId: form.assignedUserId || null,
+          assignedUserIds: form.assignedUserIds,
           packageUnit: form.packageUnit || null,
           packageSize: packageSizeValue,
           barcode: form.barcode || null,
@@ -234,7 +234,7 @@ export function ProductFormPage() {
           countFrequency: form.countFrequency,
           countDays: form.countDays,
           minStock: minStockValue,
-          assignedUserId: form.assignedUserId || null,
+          assignedUserIds: form.assignedUserIds,
           packageUnit: form.packageUnit || null,
           packageSize: packageSizeValue,
           barcode: form.barcode || null,
@@ -593,26 +593,87 @@ export function ProductFormPage() {
           </div>
         </div>
 
-        {/* Usuario asignado */}
+        {/* Usuarios asignados */}
         <div style={fieldGroup}>
           <label style={labelStyle}>
-            USUARIO ASIGNADO{' '}
+            USUARIOS ASIGNADOS{' '}
             <span style={{ color: colors.textMuted, fontWeight: 400, textTransform: 'none' }}>
               (opcional)
             </span>
           </label>
-          <select
-            value={form.assignedUserId}
-            onChange={(e) => setForm((f) => ({ ...f, assignedUserId: e.target.value }))}
-            style={selectStyle}
-          >
-            <option value="">Sin asignar — visible para todos</option>
-            {users.map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.name}
-              </option>
-            ))}
-          </select>
+          <p style={{ margin: 0, fontSize: '12px', color: colors.textMuted, lineHeight: 1.4 }}>
+            Sin selección = visible para todos los trabajadores.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {users.map((u) => {
+              const checked = form.assignedUserIds.includes(u.id);
+              return (
+                <label
+                  key={u.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '12px 14px',
+                    borderRadius: radius.sm,
+                    border: `2px solid ${checked ? colors.primary : colors.border}`,
+                    backgroundColor: checked ? colors.primaryLight : colors.surface,
+                    cursor: 'pointer',
+                    minHeight: '52px',
+                    boxSizing: 'border-box',
+                    transition: `all ${transition.fast}`,
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() =>
+                      setForm((f) => ({
+                        ...f,
+                        assignedUserIds: checked
+                          ? f.assignedUserIds.filter((id) => id !== u.id)
+                          : [...f.assignedUserIds, u.id],
+                      }))
+                    }
+                    style={{
+                      width: '18px',
+                      height: '18px',
+                      accentColor: colors.primary,
+                      flexShrink: 0,
+                    }}
+                  />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <span
+                      style={{
+                        fontSize: fontSize.base,
+                        fontWeight: checked ? 700 : 500,
+                        color: checked ? colors.primary : colors.text,
+                      }}
+                    >
+                      {u.name}
+                    </span>
+                    {u.role && (
+                      <span
+                        style={{
+                          fontSize: '11px',
+                          color: colors.textMuted,
+                          marginLeft: '8px',
+                          textTransform: 'capitalize',
+                        }}
+                      >
+                        {u.role}
+                      </span>
+                    )}
+                  </div>
+                </label>
+              );
+            })}
+            {users.length === 0 && (
+              <p style={{ margin: 0, fontSize: fontSize.sm, color: colors.textMuted }}>
+                No hay usuarios registrados.
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Variantes — solo en modo edición */}

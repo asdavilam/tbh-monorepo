@@ -37,7 +37,11 @@ export function useProductAssignment() {
     await bulkAssignProducts.execute(user.id, productIds, targetUserId);
     // Reflect changes locally
     setProducts((prev) =>
-      prev.map((p) => (productIds.includes(p.id) ? { ...p, assignedUserId: targetUserId } : p))
+      prev.map((p) =>
+        productIds.includes(p.id)
+          ? { ...p, assignedUserIds: targetUserId ? [targetUserId] : [] }
+          : p
+      )
     );
   }
 

@@ -16,13 +16,13 @@ export function ProductAssignmentPage() {
 
   const filteredProducts = useMemo(() => {
     if (filterUserId === 'all') return products;
-    if (filterUserId === 'none') return products.filter((p) => p.assignedUserId === null);
-    return products.filter((p) => p.assignedUserId === filterUserId);
+    if (filterUserId === 'none') return products.filter((p) => p.assignedUserIds.length === 0);
+    return products.filter((p) => p.assignedUserIds.includes(filterUserId));
   }, [products, filterUserId]);
 
-  function getUserName(userId: string | null): string {
-    if (!userId) return 'Sin asignar';
-    return users.find((u) => u.id === userId)?.name ?? 'Sin asignar';
+  function getUserNames(userIds: string[]): string {
+    if (userIds.length === 0) return 'Sin asignar';
+    return userIds.map((id) => users.find((u) => u.id === id)?.name ?? 'Desconocido').join(', ');
   }
 
   function toggleProduct(id: string) {
@@ -345,11 +345,11 @@ export function ProductAssignmentPage() {
                   <span>·</span>
                   <span
                     style={{
-                      color: product.assignedUserId ? colors.primary : colors.textLight,
+                      color: product.assignedUserIds.length > 0 ? colors.primary : colors.textLight,
                       fontWeight: 500,
                     }}
                   >
-                    {getUserName(product.assignedUserId)}
+                    {getUserNames(product.assignedUserIds)}
                   </span>
                 </div>
               </div>

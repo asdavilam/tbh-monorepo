@@ -26,9 +26,9 @@ export function ProductsPage() {
       .catch(() => setUsers([]));
   }, [user?.id]);
 
-  function getUserName(userId: string | null): string {
-    if (!userId) return 'Sin asignar';
-    return users.find((u) => u.id === userId)?.name ?? 'Sin asignar';
+  function getUserNames(userIds: string[]): string {
+    if (userIds.length === 0) return 'Sin asignar';
+    return userIds.map((id) => users.find((u) => u.id === id)?.name ?? 'Desconocido').join(', ');
   }
 
   async function handleDelete(id: string, name: string) {
@@ -210,7 +210,7 @@ export function ProductsPage() {
                 <div key={product.id}>
                   <ProductCard
                     product={product}
-                    getUserName={getUserName}
+                    getUserNames={getUserNames}
                     onEdit={() => navigate(`/productos/${product.id}/editar`)}
                     onDelete={() => handleDelete(product.id, product.name)}
                     isDeleting={deletingId === product.id}
@@ -230,7 +230,7 @@ export function ProductsPage() {
                       >
                         <ProductCard
                           product={variant}
-                          getUserName={getUserName}
+                          getUserNames={getUserNames}
                           onEdit={() => navigate(`/productos/${variant.id}/editar`)}
                           onDelete={() => handleDelete(variant.id, variant.name)}
                           isDeleting={deletingId === variant.id}
@@ -294,7 +294,7 @@ export function ProductsPage() {
 
 interface ProductCardProps {
   product: import('@tbh/application').ProductResponseDto;
-  getUserName: (id: string | null) => string;
+  getUserNames: (ids: string[]) => string;
   onEdit: () => void;
   onDelete: () => void;
   isDeleting: boolean;
@@ -303,7 +303,7 @@ interface ProductCardProps {
 
 function ProductCard({
   product,
-  getUserName,
+  getUserNames,
   onEdit,
   onDelete,
   isDeleting,
@@ -405,7 +405,7 @@ function ProductCard({
         )}
         <span style={{ gridColumn: '1 / -1' }}>
           <span style={{ fontWeight: 600, color: colors.text }}>Asignado a:</span>{' '}
-          {getUserName(product.assignedUserId)}
+          {getUserNames(product.assignedUserIds)}
         </span>
       </div>
 

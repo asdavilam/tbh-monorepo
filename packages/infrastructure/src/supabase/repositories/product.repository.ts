@@ -29,7 +29,7 @@ export class SupabaseProductRepository implements IProductRepository {
     const { data, error } = await this.client
       .from('products')
       .select('*')
-      .or(`assigned_user_id.eq.${userId},assigned_user_id.is.null`)
+      .or(`assigned_user_ids.cs.{${userId}},assigned_user_ids.eq.{}`)
       .order('name');
 
     if (error) throw new RepositoryError(`Error al buscar productos del usuario: ${error.message}`);
@@ -67,9 +67,10 @@ export class SupabaseProductRepository implements IProductRepository {
   }
 
   async bulkUpdateAssignedUser(productIds: string[], userId: string | null): Promise<void> {
+    const userIds = userId ? [userId] : [];
     const { error } = await this.client
       .from('products')
-      .update({ assigned_user_id: userId })
+      .update({ assigned_user_ids: userIds })
       .in('id', productIds);
 
     if (error) throw new RepositoryError(`Error al asignar productos en masa: ${error.message}`);

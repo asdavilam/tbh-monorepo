@@ -9,6 +9,8 @@ interface CountCardProps {
   userId: string;
   index: number;
   onSaved: (record: InventoryRecordResponseDto) => void;
+  onValueChange: (productId: string, hasValue: boolean) => void;
+  triggerSave: number;
   autoFocus?: boolean;
 }
 
@@ -78,7 +80,15 @@ function clearDraft(productId: string) {
   }
 }
 
-export function CountCard({ item, userId, index, onSaved, autoFocus = false }: CountCardProps) {
+export function CountCard({
+  item,
+  userId,
+  index,
+  onSaved,
+  onValueChange,
+  triggerSave,
+  autoFocus = false,
+}: CountCardProps) {
   const draft = loadDraft(item.productId);
 
   const [finalCount, setFinalCount] = useState(draft?.finalCount ?? '');
@@ -137,6 +147,27 @@ export function CountCard({ item, userId, index, onSaved, autoFocus = false }: C
       handleSave();
     }
   }
+
+  // Reportar al padre si este campo tiene valor (incluye estado inicial de borrador)
+  useEffect(() => {
+    const hasValue = isQualitative ? qualitativeValue !== null : finalCount !== '';
+    onValueChange(item.productId, hasValue);
+  }, [finalCount, qualitativeValue]); // intentionally omit onValueChange (stable ref)
+
+  // Ref para evitar stale closures al reaccionar al triggerSave del padre
+  const saveStateRef = useRef({ handleSave, canSave, savedRecord, saving });
+  saveStateRef.current = { handleSave, canSave, savedRecord, saving };
+
+  useEffect(() => {
+    if (triggerSave === 0) return;
+    const {
+      handleSave: save,
+      canSave: can,
+      savedRecord: saved,
+      saving: isSaving,
+    } = saveStateRef.current;
+    if (!saved && can && !isSaving) save();
+  }, [triggerSave]); // saveStateRef always holds latest values — no other deps needed
 
   // Estado: guardado
   if (savedRecord) {
@@ -246,6 +277,7 @@ export function CountCard({ item, userId, index, onSaved, autoFocus = false }: C
   return (
     <div
       style={{
+        position: 'relative',
         backgroundColor: colors.surface,
         borderRadius: radius.md,
         padding: '20px',
@@ -258,41 +290,39 @@ export function CountCard({ item, userId, index, onSaved, autoFocus = false }: C
         flexWrap: 'wrap',
       }}
     >
+      {/* Index badge — esquina superior derecha */}
+      <span
+        style={{
+          position: 'absolute',
+          top: '7px',
+          left: '10px',
+          fontSize: '10px',
+          fontWeight: 800,
+          color: isActive ? colors.primary : colors.textMuted,
+          opacity: 0.7,
+          letterSpacing: '0.02em',
+          lineHeight: 1,
+          pointerEvents: 'none',
+          userSelect: 'none',
+        }}
+      >
+        {String(index + 1).padStart(2, '0')}
+      </span>
+
       {/* Left: info */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1, minWidth: 0 }}>
-        {/* Index badge */}
-        <div
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p
           style={{
-            width: '40px',
-            height: '40px',
-            borderRadius: '10px',
-            border: isActive ? `2px solid ${colors.primary}` : `2px solid ${colors.border}`,
-            backgroundColor: isActive ? `${colors.primary}10` : 'transparent',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-            color: isActive ? colors.primary : colors.textMuted,
-            fontSize: '12px',
-            fontWeight: 800,
+            margin: 0,
+            fontWeight: 700,
+            fontSize: fontSize.md,
+            color: colors.text,
+            letterSpacing: '-0.01em',
+            textTransform: 'uppercase',
           }}
         >
-          {String(index + 1).padStart(2, '0')}
-        </div>
-        <div style={{ minWidth: 0 }}>
-          <p
-            style={{
-              margin: 0,
-              fontWeight: 700,
-              fontSize: fontSize.md,
-              color: colors.text,
-              letterSpacing: '-0.01em',
-              textTransform: 'uppercase',
-            }}
-          >
-            {item.name}
-          </p>
-        </div>
+          {item.name}
+        </p>
       </div>
 
       {/* Right: input */}
@@ -422,29 +452,20 @@ export function CountCard({ item, userId, index, onSaved, autoFocus = false }: C
         </div>
       )}
 
-      {/* Save button — only show if not saved */}
-      {(canSave || isQualitative) && (
-        <button
-          onClick={handleSave}
-          disabled={!canSave || saving}
+      {/* Indicador de guardando en la card */}
+      {saving && (
+        <p
           style={{
             width: '100%',
-            backgroundColor: canSave && !saving ? colors.primary : colors.border,
-            color: canSave && !saving ? '#fff' : colors.textMuted,
-            border: 'none',
-            borderRadius: radius.sm,
-            padding: '13px',
-            fontSize: '13px',
-            fontWeight: 700,
-            letterSpacing: '0.06em',
-            textTransform: 'uppercase',
-            cursor: canSave && !saving ? 'pointer' : 'not-allowed',
-            minHeight: '48px',
-            transition: `background-color ${transition.fast}`,
+            margin: 0,
+            fontSize: '12px',
+            color: colors.textMuted,
+            fontWeight: 600,
+            textAlign: 'center',
           }}
         >
-          {saving ? 'Guardando...' : 'Guardar conteo'}
-        </button>
+          Guardando...
+        </p>
       )}
     </div>
   );

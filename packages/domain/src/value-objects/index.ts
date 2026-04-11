@@ -38,6 +38,44 @@ export const QUALITATIVE_VALUE_LABELS: Record<QualitativeValue, string> = {
   nada: 'Nada',
 };
 
+export type ProductCategory =
+  | 'carnes'
+  | 'panaderia'
+  | 'aderezos'
+  | 'congelados'
+  | 'frescos'
+  | 'lacteos'
+  | 'bebidas'
+  | 'desechables'
+  | 'limpieza'
+  | 'otros';
+
+export const PRODUCT_CATEGORIES: ProductCategory[] = [
+  'carnes',
+  'panaderia',
+  'aderezos',
+  'congelados',
+  'frescos',
+  'lacteos',
+  'bebidas',
+  'desechables',
+  'limpieza',
+  'otros',
+];
+
+export const PRODUCT_CATEGORY_LABELS: Record<ProductCategory, string> = {
+  carnes: 'Carnes',
+  panaderia: 'Panadería',
+  aderezos: 'Aderezos',
+  congelados: 'Congelados',
+  frescos: 'Frescos / Verduras',
+  lacteos: 'Lácteos',
+  bebidas: 'Bebidas',
+  desechables: 'Desechables',
+  limpieza: 'Limpieza',
+  otros: 'Otros',
+};
+
 export const DAY_OF_WEEK_LABELS: Record<DayOfWeek, string> = {
   0: 'Domingo',
   1: 'Lunes',

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PRODUCT_TYPE_LABELS, UNIT_TYPE_LABELS } from '@tbh/domain';
+import { PRODUCT_TYPE_LABELS, UNIT_TYPE_LABELS, PRODUCT_CATEGORY_LABELS } from '@tbh/domain';
+import type { ProductCategory } from '@tbh/domain';
 import type { UserResponseDto } from '@tbh/application';
 import { getAllUsers } from '../../../shared/di';
 import { useAuth } from '../../../shared/contexts/AuthContext';
@@ -15,6 +16,7 @@ export function ProductsPage() {
   const [users, setUsers] = useState<UserResponseDto[]>([]);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     if (!user) return;
@@ -84,6 +86,50 @@ export function ProductsPage() {
           Nuevo producto
         </button>
 
+        {/* Search bar */}
+        <div style={{ position: 'relative' }}>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              left: '14px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              color: colors.textMuted,
+              pointerEvents: 'none',
+            }}
+          >
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input
+            type="search"
+            placeholder="Buscar producto..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{
+              width: '100%',
+              boxSizing: 'border-box',
+              backgroundColor: colors.surfaceLow,
+              border: `1px solid ${colors.border}`,
+              borderRadius: radius.md,
+              padding: '12px 14px 12px 42px',
+              fontSize: fontSize.base,
+              color: colors.text,
+              outline: 'none',
+              minHeight: '48px',
+            }}
+          />
+        </div>
+
         {deleteError && (
           <div
             style={{
@@ -125,62 +171,119 @@ export function ProductsPage() {
             No hay productos registrados.
           </p>
         )}
+        {!loading &&
+          !error &&
+          products.length > 0 &&
+          searchQuery.trim() &&
+          (() => {
+            const q = searchQuery.trim().toLowerCase();
+            const anyMatch = products.some((p) => p.name.toLowerCase().includes(q));
+            return !anyMatch ? (
+              <p style={{ color: colors.textMuted, fontSize: fontSize.base, margin: 0 }}>
+                Sin resultados para "{searchQuery}".
+              </p>
+            ) : null;
+          })()}
 
-        {/* Product list — containers first, then variants indented, then standalones */}
+        {/* Product list — grouped by category, containers first, variants indented */}
         {(() => {
-          const variantParentIds = new Set(
-            products.filter((p) => p.parentProductId !== null).map((p) => p.parentProductId!)
-          );
-          const rendered = new Set<string>();
-          const nodes: React.ReactNode[] = [];
+          const q = searchQuery.trim().toLowerCase();
+          const filtered = q ? products.filter((p) => p.name.toLowerCase().includes(q)) : products;
 
-          for (const product of products) {
-            if (rendered.has(product.id)) continue;
-            if (product.parentProductId) continue; // variants rendered under parent
-
-            const isContainer = variantParentIds.has(product.id);
-            const children = isContainer
-              ? products.filter((p) => p.parentProductId === product.id)
-              : [];
-
-            nodes.push(
-              <div key={product.id}>
-                <ProductCard
-                  product={product}
-                  getUserName={getUserName}
-                  onEdit={() => navigate(`/productos/${product.id}/editar`)}
-                  onDelete={() => handleDelete(product.id, product.name)}
-                  isDeleting={deletingId === product.id}
-                  isContainer={isContainer}
-                />
-                {children.map((variant) => {
-                  rendered.add(variant.id);
-                  return (
-                    <div
-                      key={variant.id}
-                      style={{
-                        paddingLeft: '16px',
-                        borderLeft: `3px solid ${colors.border}`,
-                        marginLeft: '12px',
-                        marginTop: '6px',
-                      }}
-                    >
-                      <ProductCard
-                        product={variant}
-                        getUserName={getUserName}
-                        onEdit={() => navigate(`/productos/${variant.id}/editar`)}
-                        onDelete={() => handleDelete(variant.id, variant.name)}
-                        isDeleting={deletingId === variant.id}
-                        isContainer={false}
-                      />
-                    </div>
-                  );
-                })}
-              </div>
+          function renderGroup(groupProducts: typeof filtered) {
+            const variantParentIds = new Set(
+              groupProducts.filter((p) => p.parentProductId !== null).map((p) => p.parentProductId!)
             );
-            rendered.add(product.id);
+            const rendered = new Set<string>();
+            const nodes: React.ReactNode[] = [];
+
+            for (const product of groupProducts) {
+              if (rendered.has(product.id)) continue;
+              if (product.parentProductId) continue;
+
+              const isContainer = variantParentIds.has(product.id);
+              const children = isContainer
+                ? groupProducts.filter((p) => p.parentProductId === product.id)
+                : [];
+
+              nodes.push(
+                <div key={product.id}>
+                  <ProductCard
+                    product={product}
+                    getUserName={getUserName}
+                    onEdit={() => navigate(`/productos/${product.id}/editar`)}
+                    onDelete={() => handleDelete(product.id, product.name)}
+                    isDeleting={deletingId === product.id}
+                    isContainer={isContainer}
+                  />
+                  {children.map((variant) => {
+                    rendered.add(variant.id);
+                    return (
+                      <div
+                        key={variant.id}
+                        style={{
+                          paddingLeft: '16px',
+                          borderLeft: `3px solid ${colors.border}`,
+                          marginLeft: '12px',
+                          marginTop: '6px',
+                        }}
+                      >
+                        <ProductCard
+                          product={variant}
+                          getUserName={getUserName}
+                          onEdit={() => navigate(`/productos/${variant.id}/editar`)}
+                          onDelete={() => handleDelete(variant.id, variant.name)}
+                          isDeleting={deletingId === variant.id}
+                          isContainer={false}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+              rendered.add(product.id);
+            }
+            return nodes;
           }
-          return nodes;
+
+          const hasCategories = filtered.some((p) => p.category);
+          if (!hasCategories) return renderGroup(filtered);
+
+          // Agrupar por categoría
+          const map = new Map<string, typeof filtered>();
+          for (const p of filtered) {
+            const key = p.category?.trim() || '';
+            if (!map.has(key)) map.set(key, []);
+            map.get(key)!.push(p);
+          }
+          const groups = Array.from(map.entries())
+            .filter(([k]) => k !== '')
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([label, items]) => ({ label, items }));
+          const uncategorized = map.get('');
+          if (uncategorized?.length) groups.push({ label: 'Sin categoría', items: uncategorized });
+
+          return groups.map(({ label, items }) => (
+            <div key={label}>
+              <div
+                style={{
+                  fontSize: '10px',
+                  fontWeight: 800,
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                  color: colors.textMuted,
+                  padding: '12px 2px 6px',
+                  borderBottom: `1px solid ${colors.border}`,
+                  marginBottom: '8px',
+                }}
+              >
+                {PRODUCT_CATEGORY_LABELS[label as ProductCategory] ?? label}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {renderGroup(items)}
+              </div>
+            </div>
+          ));
         })()}
       </div>
     </Layout>

@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import React, { useState, useCallback } from 'react';
+import { PRODUCT_CATEGORY_LABELS } from '@tbh/domain';
+import type { ProductCategory } from '@tbh/domain';
 import type { InventoryItemDto, InventoryRecordResponseDto } from '@tbh/application';
 import { useAuth } from '../../../shared/contexts/AuthContext';
 import { Layout } from '../../../shared/components/Layout';
@@ -8,6 +10,27 @@ import { useInventoryToday } from '../hooks/useInventoryToday';
 import { colors, radius, fontSize, transition, spacing } from '../../../shared/theme';
 
 type Tab = 'conteo' | 'stock';
+
+// ── Category header ───────────────────────────────────────────────────────────
+
+function CategoryHeader({ label }: { label: string }) {
+  return (
+    <div
+      style={{
+        fontSize: '10px',
+        fontWeight: 800,
+        letterSpacing: '0.1em',
+        textTransform: 'uppercase',
+        color: colors.textMuted,
+        padding: '12px 2px 6px',
+        borderBottom: `1px solid ${colors.border}`,
+        marginBottom: '4px',
+      }}
+    >
+      {label}
+    </div>
+  );
+}
 
 // ── Variant group header ──────────────────────────────────────────────────────
 
@@ -64,6 +87,8 @@ function renderInventoryItems(
   items: InventoryItemDto[],
   userId: string,
   onSaved: (record: InventoryRecordResponseDto) => void,
+  onValueChange: (productId: string, hasValue: boolean) => void,
+  triggerSave: number,
   savedIds: Set<string>
 ) {
   const result: React.ReactNode[] = [];
@@ -92,6 +117,8 @@ function renderInventoryItems(
           userId={userId}
           index={globalIndex++}
           onSaved={onSaved}
+          onValueChange={onValueChange}
+          triggerSave={triggerSave}
           autoFocus={globalIndex === 1}
         />
       );
@@ -118,6 +145,8 @@ function renderInventoryItems(
             userId={userId}
             index={globalIndex++}
             onSaved={onSaved}
+            onValueChange={onValueChange}
+            triggerSave={triggerSave}
             autoFocus={false}
           />
         );
@@ -139,11 +168,23 @@ export function InventoryPage() {
   const canSeeStock = user.role === 'admin' || user.role === 'encargado';
   const { items, loading, error, reload } = useInventoryToday(user);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+  const [filledIds, setFilledIds] = useState<Set<string>>(new Set());
+  const [saveTrigger, setSaveTrigger] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
   const savedCount = savedIds.size;
 
   function handleSaved(record: InventoryRecordResponseDto) {
     setSavedIds((prev) => new Set([...prev, record.productId]));
   }
+
+  const handleValueChange = useCallback((productId: string, hasValue: boolean) => {
+    setFilledIds((prev) => {
+      const next = new Set(prev);
+      if (hasValue) next.add(productId);
+      else next.delete(productId);
+      return next;
+    });
+  }, []);
 
   const today = new Date().toLocaleDateString('es-MX', {
     weekday: 'long',
@@ -248,6 +289,9 @@ export function InventoryPage() {
   const allDone = total > 0 && savedCount >= total;
   const pending = total - savedCount;
   const progressPct = total > 0 ? (savedCount / total) * 100 : 0;
+  const pendingItems = items.filter((item) => !savedIds.has(item.productId));
+  const allPendingFilled =
+    pendingItems.length > 0 && pendingItems.every((item) => filledIds.has(item.productId));
 
   return (
     <Layout title="Inventario">
@@ -412,8 +456,141 @@ export function InventoryPage() {
             />
           </div>
 
-          {/* Checklist — grouped by parent when variants exist */}
-          {renderInventoryItems(items, user.id, handleSaved, savedIds)}
+          {/* Barra de búsqueda */}
+          <div style={{ position: 'relative' }}>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              style={{
+                position: 'absolute',
+                left: '14px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                color: colors.textMuted,
+                pointerEvents: 'none',
+              }}
+            >
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input
+              type="search"
+              placeholder="Buscar producto..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                width: '100%',
+                boxSizing: 'border-box',
+                backgroundColor: colors.surfaceLow,
+                border: `1px solid ${colors.border}`,
+                borderRadius: radius.md,
+                padding: '12px 14px 12px 42px',
+                fontSize: fontSize.base,
+                color: colors.text,
+                outline: 'none',
+                minHeight: '48px',
+              }}
+            />
+          </div>
+
+          {/* Checklist — agrupado por categoría, con variantes bajo su padre */}
+          {(() => {
+            const q = searchQuery.trim().toLowerCase();
+            const filteredItems = q
+              ? items.filter(
+                  (item) =>
+                    item.name.toLowerCase().includes(q) ||
+                    (item.parentName?.toLowerCase().includes(q) ?? false)
+                )
+              : items;
+
+            if (filteredItems.length === 0 && q) {
+              return (
+                <p style={{ color: colors.textMuted, fontSize: fontSize.base, margin: 0 }}>
+                  Sin resultados para "{searchQuery}".
+                </p>
+              );
+            }
+
+            const hasCategories = filteredItems.some((item) => item.category);
+            if (!hasCategories) {
+              return renderInventoryItems(
+                filteredItems,
+                user.id,
+                handleSaved,
+                handleValueChange,
+                saveTrigger,
+                savedIds
+              );
+            }
+
+            // Agrupar por categoría manteniendo el orden dentro de cada grupo
+            const map = new Map<string, InventoryItemDto[]>();
+            for (const item of filteredItems) {
+              const key = item.category?.trim() || '';
+              if (!map.has(key)) map.set(key, []);
+              map.get(key)!.push(item);
+            }
+            const groups = Array.from(map.entries())
+              .filter(([k]) => k !== '')
+              .sort(([a], [b]) => a.localeCompare(b))
+              .map(([label, groupItems]) => ({ label, groupItems }));
+            const uncategorized = map.get('');
+            if (uncategorized?.length)
+              groups.push({ label: 'Sin categoría', groupItems: uncategorized });
+
+            return groups.map(({ label, groupItems }) => (
+              <React.Fragment key={label}>
+                <CategoryHeader
+                  label={PRODUCT_CATEGORY_LABELS[label as ProductCategory] ?? label}
+                />
+                {renderInventoryItems(
+                  groupItems,
+                  user.id,
+                  handleSaved,
+                  handleValueChange,
+                  saveTrigger,
+                  savedIds
+                )}
+              </React.Fragment>
+            ));
+          })()}
+
+          {/* Botón global de guardar */}
+          {!allDone && (
+            <button
+              onClick={() => setSaveTrigger((t) => t + 1)}
+              disabled={!allPendingFilled}
+              style={{
+                width: '100%',
+                backgroundColor: allPendingFilled ? colors.primary : colors.border,
+                color: allPendingFilled ? '#fff' : colors.textMuted,
+                border: 'none',
+                borderRadius: radius.md,
+                padding: '16px',
+                fontSize: '14px',
+                fontWeight: 700,
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+                cursor: allPendingFilled ? 'pointer' : 'not-allowed',
+                minHeight: '52px',
+                marginTop: '4px',
+                boxShadow: allPendingFilled ? `0 4px 14px ${colors.primary}33` : 'none',
+                transition: `background-color ${transition.fast}, box-shadow ${transition.fast}`,
+              }}
+            >
+              {allPendingFilled
+                ? 'Guardar conteo'
+                : `Faltan ${pendingItems.filter((i) => !filledIds.has(i.productId)).length} campos`}
+            </button>
+          )}
         </div>
       )}
     </Layout>

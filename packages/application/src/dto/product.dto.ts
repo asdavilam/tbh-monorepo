@@ -1,4 +1,11 @@
-import type { ProductType, UnitType, CountFrequency, DayOfWeek, UserRole } from '@tbh/domain';
+import type {
+  ProductType,
+  UnitType,
+  CountFrequency,
+  DayOfWeek,
+  UserRole,
+  ProductCategory,
+} from '@tbh/domain';
 
 export interface CreateProductDto {
   name: string;
@@ -12,6 +19,7 @@ export interface CreateProductDto {
   packageUnit: string | null;
   packageSize: number | null;
   barcode: string | null;
+  category?: ProductCategory | null;
   parentProductId?: string | null;
 }
 
@@ -28,6 +36,7 @@ export interface UpdateProductDto {
   packageUnit?: string | null;
   packageSize?: number | null;
   barcode?: string | null;
+  category?: ProductCategory | null;
   parentProductId?: string | null;
 }
 
@@ -44,6 +53,7 @@ export interface ProductResponseDto {
   packageUnit: string | null;
   packageSize: number | null;
   barcode: string | null;
+  category: ProductCategory | null;
   parentProductId: string | null;
   createdAt: string;
   updatedAt: string;

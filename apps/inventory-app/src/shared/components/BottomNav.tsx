@@ -224,7 +224,7 @@ export function BottomNav() {
   // Primary nav items (always visible)
   const primaryItems = [
     { to: '/inventario', label: 'Conteo', Icon: IconInventory, show: true },
-    { to: '/compras', label: 'Compras', Icon: IconCart, show: canManage },
+    { to: '/compras', label: 'Entradas', Icon: IconCart, show: canManage },
   ].filter((item) => item.show);
 
   // Secondary items inside the "Más" drawer

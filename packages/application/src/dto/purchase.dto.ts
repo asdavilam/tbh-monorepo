@@ -1,8 +1,12 @@
+import type { EntryType } from '@tbh/domain';
+
 export interface RegisterPurchaseDto {
   productId: string;
   userId: string;
   quantity: number;
   notes?: string;
+  /** Tipo de entrada: compra a proveedor o producción interna. Default: 'compra' */
+  entryType?: EntryType;
 }
 
 export interface PurchaseResponseDto {
@@ -12,6 +16,7 @@ export interface PurchaseResponseDto {
   quantity: number;
   purchasedAt: string;
   notes: string | null;
+  entryType: EntryType;
 }
 
 export interface GetRecentPurchasesDto {
@@ -25,4 +30,5 @@ export interface PurchaseHistoryItemDto {
   quantity: number;
   purchasedAt: string;
   notes: string | null;
+  entryType: EntryType;
 }

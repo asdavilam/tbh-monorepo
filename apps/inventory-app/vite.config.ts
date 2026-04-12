@@ -7,7 +7,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['icon.svg'],
+      includeAssets: ['icon.svg', 'isologo.png'],
       manifest: {
         name: 'TBH Inventario',
         short_name: 'TBH',
@@ -22,6 +22,12 @@ export default defineConfig({
             src: 'icon.svg',
             sizes: 'any',
             type: 'image/svg+xml',
+            purpose: 'any',
+          },
+          {
+            src: 'isologo.png',
+            sizes: '512x512',
+            type: 'image/png',
             purpose: 'any',
           },
         ],

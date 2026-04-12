@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { PRODUCT_CATEGORY_LABELS } from '@tbh/domain';
 import type { ProductCategory } from '@tbh/domain';
 import type { InventoryItemDto, InventoryRecordResponseDto } from '@tbh/application';
@@ -307,7 +307,8 @@ function renderInventoryItems(
   onSaved: (record: InventoryRecordResponseDto) => void,
   onValueChange: (productId: string, hasValue: boolean) => void,
   triggerSave: number,
-  savedIds: Set<string>
+  savedIds: Set<string>,
+  missingIds: Set<string>
 ) {
   const result: React.ReactNode[] = [];
   const rendered = new Set<string>();
@@ -338,6 +339,7 @@ function renderInventoryItems(
           onValueChange={onValueChange}
           triggerSave={triggerSave}
           autoFocus={globalIndex === 1}
+          highlightMissing={missingIds.has(item.productId)}
         />
       );
       rendered.add(item.productId);
@@ -366,6 +368,7 @@ function renderInventoryItems(
             onValueChange={onValueChange}
             triggerSave={triggerSave}
             autoFocus={false}
+            highlightMissing={missingIds.has(variant.productId)}
           />
         );
         rendered.add(variant.productId);
@@ -385,18 +388,55 @@ export function InventoryPage() {
 
   const canSeeStock = user.role === 'admin' || user.role === 'encargado';
   const { items, loading, error, reload } = useInventoryToday(user);
-  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
-  const [savedRecords, setSavedRecords] = useState<Map<string, InventoryRecordResponseDto>>(
-    new Map()
+
+  // Registros ya guardados hoy (cargados desde DB al abrir la pantalla)
+  const existingSavedIds = useMemo(
+    () => new Set(items.filter((i) => i.existingRecord).map((i) => i.productId)),
+    [items]
   );
+  const existingSavedRecords = useMemo(() => {
+    const map = new Map<string, InventoryRecordResponseDto>();
+    for (const item of items) {
+      if (item.existingRecord) map.set(item.productId, item.existingRecord);
+    }
+    return map;
+  }, [items]);
+
+  // Registros guardados durante esta sesión (sin persistir en DB todavía)
+  const [newlySavedIds, setNewlySavedIds] = useState<Set<string>>(new Set());
+  const [newlySavedRecords, setNewlySavedRecords] = useState<
+    Map<string, InventoryRecordResponseDto>
+  >(new Map());
+
+  // Combinados: pre-existentes + nuevos de esta sesión
+  const savedIds = useMemo(
+    () => new Set([...existingSavedIds, ...newlySavedIds]),
+    [existingSavedIds, newlySavedIds]
+  );
+  const savedRecords = useMemo(
+    () => new Map([...existingSavedRecords, ...newlySavedRecords]),
+    [existingSavedRecords, newlySavedRecords]
+  );
+
   const [filledIds, setFilledIds] = useState<Set<string>>(new Set());
   const [saveTrigger, setSaveTrigger] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showMissingHighlight, setShowMissingHighlight] = useState(false);
   const savedCount = savedIds.size;
 
+  // IDs pendientes sin valor — computado aquí (antes de cualquier return condicional) para respetar Rules of Hooks
+  const missingIds = useMemo(() => {
+    if (!showMissingHighlight) return new Set<string>();
+    return new Set(
+      items
+        .filter((i) => !savedIds.has(i.productId) && !filledIds.has(i.productId))
+        .map((i) => i.productId)
+    );
+  }, [showMissingHighlight, items, savedIds, filledIds]);
+
   function handleSaved(record: InventoryRecordResponseDto) {
-    setSavedIds((prev) => new Set([...prev, record.productId]));
-    setSavedRecords((prev) => new Map([...prev, [record.productId, record]]));
+    setNewlySavedIds((prev) => new Set([...prev, record.productId]));
+    setNewlySavedRecords((prev) => new Map([...prev, [record.productId, record]]));
   }
 
   const handleValueChange = useCallback((productId: string, hasValue: boolean) => {
@@ -406,6 +446,8 @@ export function InventoryPage() {
       else next.delete(productId);
       return next;
     });
+    // Limpiar highlight cuando el usuario empieza a llenar un campo
+    if (hasValue) setShowMissingHighlight(false);
   }, []);
 
   const today = new Date().toLocaleDateString('es-MX', {
@@ -509,11 +551,18 @@ export function InventoryPage() {
 
   const total = items.length;
   const allDone = total > 0 && savedCount >= total;
-  const pending = total - savedCount;
   const progressPct = total > 0 ? (savedCount / total) * 100 : 0;
   const pendingItems = items.filter((item) => !savedIds.has(item.productId));
   const allPendingFilled =
     pendingItems.length > 0 && pendingItems.every((item) => filledIds.has(item.productId));
+
+  // Campos llenados (con valor ingresado, incluyendo ya guardados)
+  const filledCount = filledIds.size + savedCount;
+  // Productos con stock inicial bajo mínimo (urgencia de compra)
+  const lowStockCount = items.filter(
+    (item) =>
+      item.initialStock !== null && item.minStock !== null && item.initialStock < item.minStock
+  ).length;
 
   return (
     <Layout title="Inventario">
@@ -594,6 +643,7 @@ export function InventoryPage() {
               marginBottom: '8px',
             }}
           >
+            {/* Card 1: Llenados — live counter a medida que el usuario ingresa valores */}
             <div
               style={{
                 backgroundColor: colors.surfaceLow,
@@ -615,25 +665,40 @@ export function InventoryPage() {
                   color: colors.textMuted,
                 }}
               >
-                Por completar
+                Llenados
               </span>
-              <span
-                style={{
-                  fontSize: '40px',
-                  fontWeight: 900,
-                  letterSpacing: '-0.04em',
-                  color: colors.text,
-                  lineHeight: 1,
-                }}
-              >
-                {String(pending).padStart(2, '0')}
-              </span>
+              <div>
+                <span
+                  style={{
+                    fontSize: '40px',
+                    fontWeight: 900,
+                    letterSpacing: '-0.04em',
+                    color: colors.primary,
+                    lineHeight: 1,
+                  }}
+                >
+                  {String(Math.min(filledCount, total)).padStart(2, '0')}
+                </span>
+                <span
+                  style={{
+                    fontSize: '14px',
+                    fontWeight: 700,
+                    color: colors.textMuted,
+                    marginLeft: '4px',
+                  }}
+                >
+                  / {total}
+                </span>
+              </div>
             </div>
+
+            {/* Card 2: Bajo mínimo — urgencia de compra basada en stock inicial */}
             <div
               style={{
-                backgroundColor: colors.surfaceLow,
+                backgroundColor: lowStockCount > 0 ? `${colors.warning}10` : colors.surfaceLow,
                 borderRadius: radius.md,
                 padding: '16px',
+                borderLeft: `4px solid ${lowStockCount > 0 ? colors.warning : colors.border}`,
                 minHeight: '100px',
                 display: 'flex',
                 flexDirection: 'column',
@@ -646,21 +711,21 @@ export function InventoryPage() {
                   fontWeight: 700,
                   letterSpacing: '0.08em',
                   textTransform: 'uppercase',
-                  color: colors.textMuted,
+                  color: lowStockCount > 0 ? colors.warning : colors.textMuted,
                 }}
               >
-                {allDone ? '¡Completo!' : 'Guardados'}
+                Bajo mínimo
               </span>
               <span
                 style={{
                   fontSize: '40px',
                   fontWeight: 900,
                   letterSpacing: '-0.04em',
-                  color: allDone ? colors.success : colors.primary,
+                  color: lowStockCount > 0 ? colors.warning : colors.textMuted,
                   lineHeight: 1,
                 }}
               >
-                {String(savedCount).padStart(2, '0')}
+                {String(lowStockCount).padStart(2, '0')}
               </span>
             </div>
           </div>
@@ -757,7 +822,8 @@ export function InventoryPage() {
                 handleSaved,
                 handleValueChange,
                 saveTrigger,
-                savedIds
+                savedIds,
+                missingIds
               );
             }
 
@@ -787,7 +853,8 @@ export function InventoryPage() {
                   handleSaved,
                   handleValueChange,
                   saveTrigger,
-                  savedIds
+                  savedIds,
+                  missingIds
                 )}
               </React.Fragment>
             ));
@@ -796,8 +863,14 @@ export function InventoryPage() {
           {/* Botón global de guardar */}
           {!allDone && (
             <button
-              onClick={() => setSaveTrigger((t) => t + 1)}
-              disabled={!allPendingFilled}
+              onClick={() => {
+                if (allPendingFilled) {
+                  setSaveTrigger((t) => t + 1);
+                  setShowMissingHighlight(false);
+                } else {
+                  setShowMissingHighlight(true);
+                }
+              }}
               style={{
                 width: '100%',
                 backgroundColor: allPendingFilled ? colors.primary : colors.border,
@@ -809,7 +882,7 @@ export function InventoryPage() {
                 fontWeight: 700,
                 letterSpacing: '0.06em',
                 textTransform: 'uppercase',
-                cursor: allPendingFilled ? 'pointer' : 'not-allowed',
+                cursor: 'pointer',
                 minHeight: '52px',
                 marginTop: '4px',
                 boxShadow: allPendingFilled ? `0 4px 14px ${colors.primary}33` : 'none',

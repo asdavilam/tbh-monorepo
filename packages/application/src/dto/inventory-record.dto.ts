@@ -107,6 +107,10 @@ export interface InventoryItemDto {
   parentProductId: string | null;
   /** Nombre del producto padre si es variante. Null si es independiente. */
   parentName: string | null;
-  /** Categoría del producto para agrupación en UI */
+  /** Categoría del producto para agrupación en UI (variantes heredan la del padre si la propia es nula) */
   category: ProductCategory | null;
+  /** Stock mínimo definido para el producto. Null si no tiene mínimo o es cualitativo. */
+  minStock: number | null;
+  /** Registro de inventario ya guardado hoy. Presente si el usuario ya contó este producto hoy. */
+  existingRecord?: InventoryRecordResponseDto;
 }

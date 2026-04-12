@@ -30,6 +30,8 @@ export interface Product {
   category: ProductCategory | null;
   /** Producto padre — null si es independiente o contenedor de variantes */
   parentProductId: string | null;
+  /** true = se produce internamente (aderezos, carnes). false = se compra a proveedores */
+  isProduction: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

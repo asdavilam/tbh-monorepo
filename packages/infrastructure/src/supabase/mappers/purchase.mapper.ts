@@ -1,4 +1,4 @@
-import type { Purchase } from '@tbh/domain';
+import type { Purchase, EntryType } from '@tbh/domain';
 
 export interface PurchaseRow {
   id: string;
@@ -7,6 +7,7 @@ export interface PurchaseRow {
   quantity: number;
   purchased_at: string;
   notes: string | null;
+  entry_type: EntryType;
 }
 
 export function toPurchaseEntity(row: PurchaseRow): Purchase {
@@ -17,6 +18,7 @@ export function toPurchaseEntity(row: PurchaseRow): Purchase {
     quantity: row.quantity,
     purchasedAt: new Date(row.purchased_at),
     notes: row.notes,
+    entryType: row.entry_type ?? 'compra',
   };
 }
 
@@ -27,5 +29,6 @@ export function toPurchaseRow(purchase: Omit<Purchase, 'id'>): Omit<PurchaseRow,
     quantity: purchase.quantity,
     purchased_at: purchase.purchasedAt.toISOString(),
     notes: purchase.notes,
+    entry_type: purchase.entryType,
   };
 }

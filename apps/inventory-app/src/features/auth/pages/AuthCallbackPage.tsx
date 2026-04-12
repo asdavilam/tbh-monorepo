@@ -313,7 +313,7 @@ export function AuthCallbackPage() {
             textTransform: 'uppercase',
           }}
         >
-          Inventory System v1.2
+          Inventory System v1.3
         </p>
       </div>
     </div>

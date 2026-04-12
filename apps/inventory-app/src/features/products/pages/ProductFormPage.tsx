@@ -31,7 +31,8 @@ const PRODUCT_TYPES: ProductType[] = ['raw_material', 'disposable', 'basic'];
 const UNIT_TYPES: UnitType[] = ['unit', 'fraction', 'qualitative'];
 const ALL_DAYS: DayOfWeek[] = [0, 1, 2, 3, 4, 5, 6];
 
-const UNIT_LABEL_OPTIONS: Record<UnitType, string[]> = {
+// Quick-select presets per unit type — user can always type a custom label
+const UNIT_LABEL_PRESETS: Record<UnitType, string[]> = {
   unit: ['pz', 'bolsa', 'caja', 'lata', 'sobre', 'rollo'],
   fraction: ['g', 'kg', 'ml', 'l'],
   qualitative: [],
@@ -50,6 +51,7 @@ interface FormState {
   packageSize: string;
   barcode: string;
   category: ProductCategory | '';
+  isProduction: boolean;
 }
 
 const EMPTY_FORM: FormState = {
@@ -65,6 +67,7 @@ const EMPTY_FORM: FormState = {
   packageSize: '',
   barcode: '',
   category: '',
+  isProduction: false,
 };
 
 export function ProductFormPage() {
@@ -116,6 +119,7 @@ export function ProductFormPage() {
           packageSize: product.packageSize !== null ? String(product.packageSize) : '',
           barcode: product.barcode ?? '',
           category: product.category ?? '',
+          isProduction: product.isProduction ?? false,
         });
         // Load existing variants
         setVariants(products.filter((p) => p.parentProductId === id));
@@ -125,11 +129,12 @@ export function ProductFormPage() {
   }, [isEdit, id, user?.id]);
 
   function handleUnitTypeChange(unitType: UnitType) {
-    const labels = UNIT_LABEL_OPTIONS[unitType];
+    const presets = UNIT_LABEL_PRESETS[unitType];
     setForm((prev) => ({
       ...prev,
       unitType,
-      unitLabel: labels[0] ?? '',
+      // Reset to first preset of new type, or keep empty for qualitative
+      unitLabel: presets[0] ?? '',
       minStock: unitType === 'qualitative' ? '' : prev.minStock,
       packageUnit: unitType === 'qualitative' ? '' : prev.packageUnit,
       packageSize: unitType === 'qualitative' ? '' : prev.packageSize,
@@ -162,6 +167,8 @@ export function ProductFormPage() {
         packageUnit: null,
         packageSize: null,
         barcode: null,
+        // Inherit parent category so variants appear in the same group
+        category: form.category || null,
         parentProductId: id,
       });
       setVariants((prev) => [...prev, variant]);
@@ -190,6 +197,10 @@ export function ProductFormPage() {
 
     if (!form.name.trim()) {
       setError('El nombre es obligatorio');
+      return;
+    }
+    if (!form.unitLabel.trim() && form.unitType !== 'qualitative') {
+      setError('La etiqueta de unidad es obligatoria');
       return;
     }
     if (form.countFrequency === 'specific_days' && form.countDays.length === 0) {
@@ -224,6 +235,7 @@ export function ProductFormPage() {
           packageSize: packageSizeValue,
           barcode: form.barcode || null,
           category: form.category || null,
+          isProduction: form.isProduction,
         });
       } else {
         await createProduct.execute(user.id, {
@@ -239,6 +251,7 @@ export function ProductFormPage() {
           packageSize: packageSizeValue,
           barcode: form.barcode || null,
           category: form.category || null,
+          isProduction: form.isProduction,
         });
       }
       navigate('/productos');
@@ -257,7 +270,7 @@ export function ProductFormPage() {
     );
   }
 
-  const labelOptions = UNIT_LABEL_OPTIONS[form.unitType];
+  const presets = UNIT_LABEL_PRESETS[form.unitType];
   const isQualitative = form.unitType === 'qualitative';
 
   return (
@@ -266,6 +279,8 @@ export function ProductFormPage() {
         onSubmit={handleSubmit}
         style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}
       >
+        {/* ── Sección 1: Información básica ── */}
+
         {/* Nombre */}
         <div style={fieldGroup}>
           <label style={labelStyle}>NOMBRE</label>
@@ -277,6 +292,56 @@ export function ProductFormPage() {
             placeholder="Ej: Carne de res"
             style={inputStyle}
           />
+        </div>
+
+        {/* Origen — se compra o se produce */}
+        <div style={fieldGroup}>
+          <label style={labelStyle}>ORIGEN</label>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              backgroundColor: colors.surfaceLow,
+              borderRadius: radius.sm,
+              padding: '4px',
+              gap: '4px',
+            }}
+          >
+            {([false, true] as const).map((val) => {
+              const active = form.isProduction === val;
+              return (
+                <button
+                  key={String(val)}
+                  type="button"
+                  onClick={() => setForm((f) => ({ ...f, isProduction: val }))}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    height: '44px',
+                    border: 'none',
+                    borderRadius: '6px',
+                    backgroundColor: active ? colors.surface : 'transparent',
+                    color: active ? colors.primary : colors.textMuted,
+                    fontSize: fontSize.sm,
+                    fontWeight: active ? 700 : 500,
+                    cursor: 'pointer',
+                    boxShadow: active ? '0 1px 4px rgba(80,60,40,0.10)' : 'none',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  <span style={{ fontSize: '16px' }}>{val ? '🍳' : '🛒'}</span>
+                  {val ? 'Se produce' : 'Se compra'}
+                </button>
+              );
+            })}
+          </div>
+          <p style={{ margin: 0, fontSize: '12px', color: colors.textMuted, lineHeight: 1.4 }}>
+            {form.isProduction
+              ? 'Elaborado internamente: aderezos, carnes, panes, etc.'
+              : 'Se compra a proveedores y se registra como compra.'}
+          </p>
         </div>
 
         {/* Categoría */}
@@ -319,6 +384,11 @@ export function ProductFormPage() {
           </select>
         </div>
 
+        {/* ── Separador ── */}
+        <div style={{ height: '1px', backgroundColor: colors.border }} />
+
+        {/* ── Sección 2: Medición ── */}
+
         {/* Tipo de unidad — segmented buttons */}
         <div style={fieldGroup}>
           <label style={labelStyle}>TIPO DE UNIDAD</label>
@@ -356,7 +426,6 @@ export function ProductFormPage() {
               );
             })}
           </div>
-          {/* Descripción contextual */}
           <p style={{ margin: 0, fontSize: '12px', color: colors.textMuted, lineHeight: 1.4 }}>
             {form.unitType === 'unit' && 'Conteo por piezas completas: bolsas, latas, cajas...'}
             {form.unitType === 'fraction' && 'Conteo por cantidad: gramos, litros, kilos...'}
@@ -364,134 +433,53 @@ export function ProductFormPage() {
           </p>
         </div>
 
-        {/* Etiqueta de unidad — solo para unit y fraction */}
+        {/* Etiqueta de unidad — chips de acceso rápido + campo libre */}
         {!isQualitative && (
           <div style={fieldGroup}>
             <label style={labelStyle}>ETIQUETA DE UNIDAD</label>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              {labelOptions.map((opt) => {
-                const active = form.unitLabel === opt;
-                return (
-                  <button
-                    key={opt}
-                    type="button"
-                    onClick={() => setForm((f) => ({ ...f, unitLabel: opt }))}
-                    style={{
-                      padding: '8px 16px',
-                      borderRadius: '999px',
-                      border: `2px solid ${active ? colors.primary : colors.border}`,
-                      backgroundColor: active ? colors.primaryLight : colors.surface,
-                      color: active ? colors.primary : colors.text,
-                      fontSize: '14px',
-                      fontWeight: active ? 700 : 500,
-                      cursor: 'pointer',
-                      minHeight: '44px',
-                    }}
-                  >
-                    {opt}
-                  </button>
-                );
-              })}
-            </div>
+            {/* Quick-select chips */}
+            {presets.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {presets.map((opt) => {
+                  const active = form.unitLabel === opt;
+                  return (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => setForm((f) => ({ ...f, unitLabel: opt }))}
+                      style={{
+                        padding: '8px 16px',
+                        borderRadius: '999px',
+                        border: `2px solid ${active ? colors.primary : colors.border}`,
+                        backgroundColor: active ? colors.primaryLight : colors.surface,
+                        color: active ? colors.primary : colors.text,
+                        fontSize: '14px',
+                        fontWeight: active ? 700 : 500,
+                        cursor: 'pointer',
+                        minHeight: '44px',
+                      }}
+                    >
+                      {opt}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            {/* Free-text input — allows any custom label regardless of unit type */}
+            <input
+              type="text"
+              value={form.unitLabel}
+              onChange={(e) => setForm((f) => ({ ...f, unitLabel: e.target.value }))}
+              placeholder="Ej: pz, g, kg, ml, unidad..."
+              style={inputStyle}
+            />
+            <p style={{ margin: 0, fontSize: '11px', color: colors.textMuted, lineHeight: 1.4 }}>
+              Selecciona una opción rápida o escribe la etiqueta que necesites.
+            </p>
           </div>
         )}
 
-        {/* Separador */}
-        <div style={{ height: '1px', backgroundColor: colors.border }} />
-
-        {/* Frecuencia de conteo */}
-        <div style={fieldGroup}>
-          <label style={labelStyle}>FRECUENCIA DE CONTEO</label>
-          <select
-            value={form.countFrequency}
-            onChange={(e) =>
-              setForm((f) => ({
-                ...f,
-                countFrequency: e.target.value as CountFrequency,
-                countDays: [],
-              }))
-            }
-            style={selectStyle}
-          >
-            <option value="daily">Diario</option>
-            <option value="specific_days">Días específicos</option>
-          </select>
-        </div>
-
-        {form.countFrequency === 'specific_days' && (
-          <div style={fieldGroup}>
-            <label style={labelStyle}>DÍAS ACTIVOS</label>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              {ALL_DAYS.map((day) => {
-                const active = form.countDays.includes(day);
-                return (
-                  <button
-                    key={day}
-                    type="button"
-                    onClick={() => toggleDay(day)}
-                    style={{
-                      padding: '8px 12px',
-                      borderRadius: radius.sm,
-                      border: `1px solid ${active ? colors.primary : colors.border}`,
-                      backgroundColor: active ? colors.primaryLight : colors.surface,
-                      color: active ? colors.primary : colors.text,
-                      fontSize: fontSize.sm,
-                      fontWeight: active ? 600 : 400,
-                      cursor: 'pointer',
-                      minHeight: '44px',
-                    }}
-                  >
-                    {DAY_OF_WEEK_LABELS[day]}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Stock mínimo */}
-        {!isQualitative && (
-          <div style={fieldGroup}>
-            <label style={labelStyle}>
-              STOCK MÍNIMO{' '}
-              <span style={{ color: colors.textMuted, fontWeight: 400, textTransform: 'none' }}>
-                (opcional)
-              </span>
-            </label>
-            <div style={{ position: 'relative' }}>
-              <input
-                type="number"
-                min="0"
-                step="any"
-                value={form.minStock}
-                onChange={(e) => setForm((f) => ({ ...f, minStock: e.target.value }))}
-                placeholder="Ej: 10"
-                style={inputStyle}
-              />
-              {form.unitLabel && (
-                <span
-                  style={{
-                    position: 'absolute',
-                    right: '14px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    fontSize: '13px',
-                    fontWeight: 600,
-                    color: colors.textMuted,
-                    pointerEvents: 'none',
-                  }}
-                >
-                  {form.unitLabel}
-                </span>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Separador */}
-        <div style={{ height: '1px', backgroundColor: colors.border }} />
-
-        {/* Empaque de compra */}
+        {/* ── Sección 3: Empaque de compra (junto a medición — comparten unitLabel) ── */}
         {!isQualitative && (
           <div style={fieldGroup}>
             <label style={labelStyle}>
@@ -569,8 +557,49 @@ export function ProductFormPage() {
           </div>
         )}
 
-        {/* Separador */}
+        {/* ── Separador ── */}
         <div style={{ height: '1px', backgroundColor: colors.border }} />
+
+        {/* ── Sección 4: Umbrales de alerta ── */}
+
+        {/* Stock mínimo */}
+        {!isQualitative && (
+          <div style={fieldGroup}>
+            <label style={labelStyle}>
+              STOCK MÍNIMO{' '}
+              <span style={{ color: colors.textMuted, fontWeight: 400, textTransform: 'none' }}>
+                (opcional)
+              </span>
+            </label>
+            <div style={{ position: 'relative' }}>
+              <input
+                type="number"
+                min="0"
+                step="any"
+                value={form.minStock}
+                onChange={(e) => setForm((f) => ({ ...f, minStock: e.target.value }))}
+                placeholder="Ej: 10"
+                style={inputStyle}
+              />
+              {form.unitLabel && (
+                <span
+                  style={{
+                    position: 'absolute',
+                    right: '14px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    color: colors.textMuted,
+                    pointerEvents: 'none',
+                  }}
+                >
+                  {form.unitLabel}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Código de barras */}
         <div style={fieldGroup}>
@@ -593,7 +622,64 @@ export function ProductFormPage() {
           </div>
         </div>
 
-        {/* Usuarios asignados */}
+        {/* ── Separador ── */}
+        <div style={{ height: '1px', backgroundColor: colors.border }} />
+
+        {/* ── Sección 5: Frecuencia de conteo ── */}
+
+        <div style={fieldGroup}>
+          <label style={labelStyle}>FRECUENCIA DE CONTEO</label>
+          <select
+            value={form.countFrequency}
+            onChange={(e) =>
+              setForm((f) => ({
+                ...f,
+                countFrequency: e.target.value as CountFrequency,
+                countDays: [],
+              }))
+            }
+            style={selectStyle}
+          >
+            <option value="daily">Diario</option>
+            <option value="specific_days">Días específicos</option>
+          </select>
+        </div>
+
+        {form.countFrequency === 'specific_days' && (
+          <div style={fieldGroup}>
+            <label style={labelStyle}>DÍAS ACTIVOS</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              {ALL_DAYS.map((day) => {
+                const active = form.countDays.includes(day);
+                return (
+                  <button
+                    key={day}
+                    type="button"
+                    onClick={() => toggleDay(day)}
+                    style={{
+                      padding: '8px 12px',
+                      borderRadius: radius.sm,
+                      border: `1px solid ${active ? colors.primary : colors.border}`,
+                      backgroundColor: active ? colors.primaryLight : colors.surface,
+                      color: active ? colors.primary : colors.text,
+                      fontSize: fontSize.sm,
+                      fontWeight: active ? 600 : 400,
+                      cursor: 'pointer',
+                      minHeight: '44px',
+                    }}
+                  >
+                    {DAY_OF_WEEK_LABELS[day]}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ── Separador ── */}
+        <div style={{ height: '1px', backgroundColor: colors.border }} />
+
+        {/* ── Sección 6: Usuarios asignados ── */}
         <div style={fieldGroup}>
           <label style={labelStyle}>
             USUARIOS ASIGNADOS{' '}
@@ -631,7 +717,7 @@ export function ProductFormPage() {
                       setForm((f) => ({
                         ...f,
                         assignedUserIds: checked
-                          ? f.assignedUserIds.filter((id) => id !== u.id)
+                          ? f.assignedUserIds.filter((uid) => uid !== u.id)
                           : [...f.assignedUserIds, u.id],
                       }))
                     }
@@ -676,7 +762,7 @@ export function ProductFormPage() {
           </div>
         </div>
 
-        {/* Variantes — solo en modo edición */}
+        {/* ── Sección 7: Variantes (solo en modo edición) ── */}
         {isEdit && (
           <>
             <div style={{ height: '1px', backgroundColor: colors.border }} />

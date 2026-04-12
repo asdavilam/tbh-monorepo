@@ -574,12 +574,27 @@ export function StockView() {
           });
         }
 
-        const hasCategories = items.some((i) => i.category);
+        // Only show category groups when at least one non-variant item has a category
+        const hasCategories = items.some((i) => i.category && !i.parentProductId);
         if (!hasCategories) return renderItems(items);
+
+        // Variants should group with their container regardless of their own category field
+        // (variants may have null category if they were created before inheritance was fixed)
+        const containerCategoryById = new Map(
+          items
+            .filter((i) => i.isVariantContainer)
+            .map((i) => [i.productId, i.category?.trim() || ''])
+        );
+        const effectiveCategory = (item: StockItemDto): string => {
+          if (item.parentProductId) {
+            return containerCategoryById.get(item.parentProductId) ?? item.category?.trim() ?? '';
+          }
+          return item.category?.trim() || '';
+        };
 
         const map = new Map<string, typeof items>();
         for (const item of items) {
-          const key = item.category?.trim() || '';
+          const key = effectiveCategory(item);
           if (!map.has(key)) map.set(key, []);
           map.get(key)!.push(item);
         }

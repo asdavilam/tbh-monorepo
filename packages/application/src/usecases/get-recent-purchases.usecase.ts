@@ -30,6 +30,7 @@ export class GetRecentPurchasesUseCase {
         quantity: purchase.quantity,
         purchasedAt: purchase.purchasedAt.toISOString(),
         notes: purchase.notes,
+        entryType: purchase.entryType,
       };
     });
   }

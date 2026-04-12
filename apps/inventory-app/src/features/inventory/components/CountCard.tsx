@@ -12,6 +12,8 @@ interface CountCardProps {
   onValueChange: (productId: string, hasValue: boolean) => void;
   triggerSave: number;
   autoFocus?: boolean;
+  /** Cuando true, resalta la card en rojo para indicar que falta completarla */
+  highlightMissing?: boolean;
 }
 
 const QUALITATIVE_OPTIONS: { value: QualitativeValue; label: string; color: string }[] = [
@@ -87,6 +89,7 @@ export function CountCard({
   onValueChange,
   triggerSave,
   autoFocus = false,
+  highlightMissing = false,
 }: CountCardProps) {
   const isFractionWithPackage = item.unitType === 'fraction' && !!item.packageSize;
 
@@ -315,16 +318,25 @@ export function CountCard({
     <div
       style={{
         position: 'relative',
-        backgroundColor: colors.surface,
+        backgroundColor: highlightMissing ? `${colors.danger}08` : colors.surface,
         borderRadius: radius.md,
         padding: '20px',
-        border: isActive ? `2px solid ${colors.primary}` : `1px solid ${colors.border}`,
-        boxShadow: isActive ? `0 4px 16px ${colors.primary}18` : '0 1px 4px rgba(80,60,40,0.05)',
+        border: highlightMissing
+          ? `2px solid ${colors.danger}`
+          : isActive
+            ? `2px solid ${colors.primary}`
+            : `1px solid ${colors.border}`,
+        boxShadow: highlightMissing
+          ? `0 0 0 3px ${colors.danger}20`
+          : isActive
+            ? `0 4px 16px ${colors.primary}18`
+            : '0 1px 4px rgba(80,60,40,0.05)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         gap: spacing.md,
         flexWrap: 'wrap',
+        animation: highlightMissing ? 'shake 0.4s ease' : undefined,
       }}
     >
       {/* Index badge — esquina superior derecha */}
@@ -353,13 +365,26 @@ export function CountCard({
             margin: 0,
             fontWeight: 700,
             fontSize: fontSize.md,
-            color: colors.text,
+            color: highlightMissing ? colors.danger : colors.text,
             letterSpacing: '-0.01em',
             textTransform: 'uppercase',
           }}
         >
           {item.name}
         </p>
+        {highlightMissing && (
+          <p
+            style={{
+              margin: '3px 0 0',
+              fontSize: '11px',
+              fontWeight: 700,
+              color: colors.danger,
+              letterSpacing: '0.04em',
+            }}
+          >
+            Falta completar
+          </p>
+        )}
       </div>
 
       {/* Right: input */}
@@ -401,17 +426,18 @@ export function CountCard({
                   setFractionTouched(true);
                   setWholeUnits((w) => Math.max(0, w - 1));
                 }}
-                disabled={wholeUnits === 0}
+                disabled={fractionTouched && wholeUnits === 0}
                 style={{
                   width: '44px',
                   height: '44px',
                   borderRadius: radius.sm,
-                  border: `2px solid ${wholeUnits === 0 ? colors.border : colors.primary}`,
-                  backgroundColor: wholeUnits === 0 ? 'transparent' : colors.primaryLight,
-                  color: wholeUnits === 0 ? colors.border : colors.primary,
+                  border: `2px solid ${fractionTouched && wholeUnits === 0 ? colors.border : colors.primary}`,
+                  backgroundColor:
+                    fractionTouched && wholeUnits === 0 ? 'transparent' : colors.primaryLight,
+                  color: fractionTouched && wholeUnits === 0 ? colors.border : colors.primary,
                   fontSize: '22px',
                   fontWeight: 700,
-                  cursor: wholeUnits === 0 ? 'not-allowed' : 'pointer',
+                  cursor: fractionTouched && wholeUnits === 0 ? 'not-allowed' : 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',

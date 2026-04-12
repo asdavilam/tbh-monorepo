@@ -22,6 +22,7 @@ export interface ProductRow {
   barcode: string | null;
   category: string | null;
   parent_product_id: string | null;
+  is_production: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -42,6 +43,7 @@ export function toProductEntity(row: ProductRow): Product {
     barcode: row.barcode,
     category: row.category as ProductCategory | null,
     parentProductId: row.parent_product_id,
+    isProduction: row.is_production ?? false,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
   };
@@ -64,5 +66,6 @@ export function toProductRow(
     barcode: product.barcode,
     category: product.category,
     parent_product_id: product.parentProductId,
+    is_production: product.isProduction,
   };
 }

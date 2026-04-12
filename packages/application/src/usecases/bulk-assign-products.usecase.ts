@@ -23,6 +23,13 @@ export class BulkAssignProductsUseCase {
       if (!target) throw new Error('Usuario destino no encontrado');
     }
 
-    await this.productRepo.bulkUpdateAssignedUser(productIds, targetUserId);
+    // Also include variants of any selected container products so assignments stay in sync
+    const variantArrays = await Promise.all(
+      productIds.map((id) => this.productRepo.findByParentId(id))
+    );
+    const variantIds = variantArrays.flat().map((v) => v.id);
+    const allIds = [...new Set([...productIds, ...variantIds])];
+
+    await this.productRepo.bulkUpdateAssignedUser(allIds, targetUserId);
   }
 }

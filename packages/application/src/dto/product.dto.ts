@@ -21,6 +21,7 @@ export interface CreateProductDto {
   barcode: string | null;
   category?: ProductCategory | null;
   parentProductId?: string | null;
+  isProduction?: boolean;
 }
 
 export interface UpdateProductDto {
@@ -38,6 +39,7 @@ export interface UpdateProductDto {
   barcode?: string | null;
   category?: ProductCategory | null;
   parentProductId?: string | null;
+  isProduction?: boolean;
 }
 
 export interface ProductResponseDto {
@@ -55,6 +57,7 @@ export interface ProductResponseDto {
   barcode: string | null;
   category: ProductCategory | null;
   parentProductId: string | null;
+  isProduction: boolean;
   createdAt: string;
   updatedAt: string;
 }

@@ -26,13 +26,26 @@ export class SupabaseProductRepository implements IProductRepository {
   }
 
   async findByAssignedUser(userId: string): Promise<Product[]> {
+    // cs = contains (column array contains the given element)
+    // cd = contained by (column array is contained by the given array — only empty arrays are contained by {})
     const { data, error } = await this.client
       .from('products')
       .select('*')
-      .or(`assigned_user_ids.cs.{${userId}},assigned_user_ids.eq.{}`)
+      .or(`assigned_user_ids.cs.{${userId}},assigned_user_ids.cd.{}`)
       .order('name');
 
     if (error) throw new RepositoryError(`Error al buscar productos del usuario: ${error.message}`);
+    return (data ?? []).map(toProductEntity);
+  }
+
+  async findByParentId(parentId: string): Promise<Product[]> {
+    const { data, error } = await this.client
+      .from('products')
+      .select('*')
+      .eq('parent_product_id', parentId)
+      .order('name');
+
+    if (error) throw new RepositoryError(`Error al buscar variantes: ${error.message}`);
     return (data ?? []).map(toProductEntity);
   }
 

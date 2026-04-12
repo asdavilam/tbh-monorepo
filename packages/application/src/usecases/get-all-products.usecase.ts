@@ -18,6 +18,7 @@ function toProductResponseDto(product: Product): ProductResponseDto {
     barcode: product.barcode,
     category: product.category,
     parentProductId: product.parentProductId,
+    isProduction: product.isProduction,
     createdAt: product.createdAt.toISOString(),
     updatedAt: product.updatedAt.toISOString(),
   };

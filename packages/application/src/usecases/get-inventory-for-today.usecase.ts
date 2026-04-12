@@ -9,8 +9,13 @@ import {
   isProductVisibleToUser,
   getProductsDueToday,
   calculateInitialStock,
+  calculateStockDifference,
 } from '@tbh/domain';
-import type { GetInventoryForTodayDto, InventoryItemDto } from '../dto/inventory-record.dto';
+import type {
+  GetInventoryForTodayDto,
+  InventoryItemDto,
+  InventoryRecordResponseDto,
+} from '../dto/inventory-record.dto';
 
 export class GetInventoryForTodayUseCase {
   constructor(
@@ -26,10 +31,14 @@ export class GetInventoryForTodayUseCase {
 
     const adminUser = isAdmin(user.role);
 
-    // Obtener productos según rol
-    const products = adminUser
-      ? await this.productRepo.findAll()
-      : await this.productRepo.findByAssignedUser(dto.userId);
+    // Obtener productos según rol y registros de hoy en paralelo
+    const [products, todayRecords] = await Promise.all([
+      adminUser ? this.productRepo.findAll() : this.productRepo.findByAssignedUser(dto.userId),
+      this.inventoryRepo.findByDateRange(dto.date, dto.date),
+    ]);
+
+    // Mapa productId → registro de hoy (para detectar ya contados)
+    const todayRecordByProductId = new Map(todayRecords.map((r) => [r.productId, r]));
 
     // Filtrar por visibilidad y frecuencia del día
     const visible = products.filter((p) => isProductVisibleToUser(p, dto.userId, adminUser));
@@ -42,8 +51,9 @@ export class GetInventoryForTodayUseCase {
       allProductsForCheck.filter((p) => p.parentProductId !== null).map((p) => p.parentProductId!)
     );
 
-    // Mapa id → nombre para lookup de padres
+    // Mapas id → nombre y categoría para lookup de padres
     const productNameById = new Map(allProductsForCheck.map((p) => [p.id, p.name]));
+    const productCategoryById = new Map(allProductsForCheck.map((p) => [p.id, p.category]));
 
     // Excluir contenedores — solo contar variantes y productos independientes
     const countable = dueToday.filter((p) => !variantParentIds.has(p.id));
@@ -67,6 +77,33 @@ export class GetInventoryForTodayUseCase {
           }
         }
 
+        // Categoría efectiva: variantes heredan la categoría del padre si la propia es nula
+        const effectiveCategory = product.parentProductId
+          ? (product.category ?? productCategoryById.get(product.parentProductId) ?? null)
+          : product.category;
+
+        // Si ya existe un registro de hoy, adjuntarlo con campos calculados
+        const todayRecord = todayRecordByProductId.get(product.id);
+        let existingRecord: InventoryRecordResponseDto | undefined;
+        if (todayRecord) {
+          const difference =
+            todayRecord.finalCount !== null && initialStock !== null
+              ? calculateStockDifference(initialStock, todayRecord.finalCount)
+              : null;
+          existingRecord = {
+            id: todayRecord.id,
+            productId: todayRecord.productId,
+            userId: todayRecord.userId,
+            date: todayRecord.date.toISOString().split('T')[0],
+            finalCount: todayRecord.finalCount,
+            qualitativeValue: todayRecord.qualitativeValue,
+            initialStock,
+            difference,
+            recordedAt: todayRecord.recordedAt.toISOString(),
+            notes: todayRecord.notes,
+          };
+        }
+
         return {
           productId: product.id,
           name: product.name,
@@ -80,7 +117,9 @@ export class GetInventoryForTodayUseCase {
           parentName: product.parentProductId
             ? (productNameById.get(product.parentProductId) ?? null)
             : null,
-          category: product.category,
+          category: effectiveCategory,
+          minStock: product.minStock,
+          existingRecord,
         };
       })
     );

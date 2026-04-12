@@ -18,6 +18,7 @@ function toDto(product: Product): ProductResponseDto {
     barcode: product.barcode,
     category: product.category,
     parentProductId: product.parentProductId,
+    isProduction: product.isProduction,
     createdAt: product.createdAt.toISOString(),
     updatedAt: product.updatedAt.toISOString(),
   };
@@ -37,6 +38,9 @@ export class UpdateProductUseCase {
     const existing = await this.productRepo.findById(dto.id);
     if (!existing) throw new Error('Producto no encontrado');
 
+    const newAssignedUserIds =
+      dto.assignedUserIds !== undefined ? dto.assignedUserIds : existing.assignedUserIds;
+
     const updated = await this.productRepo.update({
       ...existing,
       name: dto.name !== undefined ? dto.name.trim() : existing.name,
@@ -46,8 +50,7 @@ export class UpdateProductUseCase {
       countFrequency: dto.countFrequency ?? existing.countFrequency,
       countDays: dto.countDays ?? existing.countDays,
       minStock: dto.minStock !== undefined ? dto.minStock : existing.minStock,
-      assignedUserIds:
-        dto.assignedUserIds !== undefined ? dto.assignedUserIds : existing.assignedUserIds,
+      assignedUserIds: newAssignedUserIds,
       packageUnit: dto.packageUnit !== undefined ? dto.packageUnit : existing.packageUnit,
       packageSize: dto.packageSize !== undefined ? dto.packageSize : existing.packageSize,
       barcode:
@@ -55,7 +58,16 @@ export class UpdateProductUseCase {
       category: dto.category !== undefined ? dto.category : existing.category,
       parentProductId:
         dto.parentProductId !== undefined ? dto.parentProductId : existing.parentProductId,
+      isProduction: dto.isProduction !== undefined ? dto.isProduction : existing.isProduction,
     });
+
+    // Cascade assignedUserIds to variants so they stay in sync with their parent
+    if (dto.assignedUserIds !== undefined && !existing.parentProductId) {
+      const variants = await this.productRepo.findByParentId(existing.id);
+      await Promise.all(
+        variants.map((v) => this.productRepo.update({ ...v, assignedUserIds: newAssignedUserIds }))
+      );
+    }
 
     return toDto(updated);
   }

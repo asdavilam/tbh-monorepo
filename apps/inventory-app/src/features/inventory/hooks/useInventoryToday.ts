@@ -30,5 +30,14 @@ export function useInventoryToday(user: AuthUser) {
     load();
   }, [load]);
 
+  // Recargar cuando la PWA vuelve al primer plano (desde background en móvil)
+  useEffect(() => {
+    function handleVisibility() {
+      if (document.visibilityState === 'visible') load();
+    }
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [load]);
+
   return { ...state, reload: load };
 }

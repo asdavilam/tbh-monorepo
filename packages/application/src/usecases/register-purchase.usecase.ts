@@ -31,6 +31,7 @@ export class RegisterPurchaseUseCase {
       quantity: dto.quantity,
       purchasedAt: new Date(),
       notes: dto.notes ?? null,
+      entryType: dto.entryType ?? 'compra',
     });
 
     return {
@@ -40,6 +41,7 @@ export class RegisterPurchaseUseCase {
       quantity: purchase.quantity,
       purchasedAt: purchase.purchasedAt.toISOString(),
       notes: purchase.notes,
+      entryType: purchase.entryType,
     };
   }
 }

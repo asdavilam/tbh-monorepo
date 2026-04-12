@@ -76,6 +76,13 @@ export const PRODUCT_CATEGORY_LABELS: Record<ProductCategory, string> = {
   otros: 'Otros',
 };
 
+export type EntryType = 'compra' | 'produccion';
+
+export const ENTRY_TYPE_LABELS: Record<EntryType, string> = {
+  compra: 'Compra',
+  produccion: 'Producción',
+};
+
 export const DAY_OF_WEEK_LABELS: Record<DayOfWeek, string> = {
   0: 'Domingo',
   1: 'Lunes',

@@ -44,11 +44,16 @@ export function usePurchase(user: AuthUser) {
     loadHistory();
   }, [loadHistory]);
 
-  async function submit(productId: string, quantity: number, notes?: string) {
+  async function submit(
+    productId: string,
+    quantity: number,
+    notes?: string,
+    entryType: 'compra' | 'produccion' = 'compra'
+  ) {
     setState((s) => ({ ...s, saving: true, error: '', success: false }));
     try {
-      await registerPurchase.execute({ productId, userId: user.id, quantity, notes });
-      removeManualItemByProduct(user.id, productId);
+      await registerPurchase.execute({ productId, userId: user.id, quantity, notes, entryType });
+      if (entryType === 'compra') removeManualItemByProduct(user.id, productId);
       setState((s) => ({ ...s, saving: false, success: true }));
       loadHistory();
     } catch (err) {
